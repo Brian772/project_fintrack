@@ -1,11 +1,11 @@
 <?php
 session_start();
     if (!isset($_SESSION['login'])) {
-        header("Location: ../src/php/index.php");
+        header("Location: ./index.php");
         exit;
     }
 
-    include '../src/php/config/conection.php';
+    include '../src/php/config/connection.php';
     if (!isset($_SESSION['login']) && isset($_COOKIE['remember_token'])) {
         $token = $_COOKIE['remember_token'];
 
@@ -39,14 +39,13 @@ session_start();
             <h1 class="text-xl font-extrabold text-emerald-600">KeuanganKu</h1>
         </div>
         <button class="flex items-center gap-2"> <!-- dummy Profile Button -->
-            <span class="hidden sm:block text-sm"><?= $_SESSION['username']; ?></span>
+            <span class="hidden sm:block text-sm">John Doe</span>
             <img src="" alt="Profile" class="w-9 h-9 sm:w-10 sm:h-10 rounded-full object-cover bg-gray-300">
         </button>
     </header>
 
     <!-- Side Bar -->
     <div>
-        <?php include 'sidebar.php'; ?>
     </div>
     
 </body>

@@ -1,8 +1,8 @@
 <?php
-session_Start() ;
-    include 'config/conection.php';
+session_Start();
+    include '../config/connection.php';
 
-    $email = $_POST['email'];
+    $email = trim($_POST['email']);
     $password = $_POST['password'];
 
     $query = mysqli_query(
@@ -33,13 +33,14 @@ session_Start() ;
                 "/"
             );
 
-            header("Location: ../public/dashboard.php");
+            header("Location: ../../../public/dashboard.php");
             exit;
         }
 
-        header("Location: ../public/dashboard.php");
+        header("Location: ../../../public/dashboard.php");
         exit;
 
     } else {
-        echo "Email atau password salah.";
+        $_SESSION['error'] = "Invalid email or password.";
+        header("Location: ../../../public/index.php");
     }

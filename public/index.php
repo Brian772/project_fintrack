@@ -1,8 +1,12 @@
 <?php
 session_start();
 
+if (isset($_GET['from']) && $_GET['from'] === 'register') {
+    unset($_SESSION['login']);
+}
+
 if (isset($_SESSION['login'])) {
-    header("Location: ../public/dashboard.php");
+    header("Location: ./dashboard.php");
     exit;
 }
 ?>
@@ -12,7 +16,7 @@ if (isset($_SESSION['login'])) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="../../public/css/output.css">
+    <link rel="stylesheet" href="./css/output.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <title>Login | KeuanganKu</title>
@@ -26,20 +30,19 @@ if (isset($_SESSION['login'])) {
     </header><br>
 
     <!-- Login Form -->
-    <div class="fixed inset-0 bg-black/40 flex item-center justify-center z-20">
+    <div class="fixed inset-0 bg-black/40 flex items-center justify-center z-20">
         <div class="w-full max-w-md max-h-min bg-white rounded-xl shadow-xl p-8 relative">
-            <h2 class=" text-2xl font-extrabold text-center mb-2 text-green-800">
+            <h2 class=" text-2xl font-extrabold text-center mb-2 text-emerald-800">
                 Login
             </h2>
-            <p class="text-xs text-gray-400 text-center mb-6">Masuk untuk mengakses dashboard</p>
+            <p class="text-xs text-gray-400 text-center mb-6">Login to your account</p>
 
-            <form action="login.php" method="POST" class="flex flex-col gap-4">
+            <form action="/project - copy/src/php/auth/login.php" method="POST" class="flex flex-col gap-4">
                 <!-- Email Input -->
                 <div>
                     <label for="email" class="block text-sm font-medium text-gray-600 mb-1">Email :</label>
                     <input 
-                        type="email" 
-                        id="email" 
+                        type="email"
                         name="email" 
                         required
                         class="w-full px-3 py-2 border rounded-full focus:outline-none focus:ring-2 focus:ring-emerald-500"
@@ -52,14 +55,21 @@ if (isset($_SESSION['login'])) {
                         Password :
                     </label>
                     <input 
-                        type="password" 
-                        id="password" 
+                        type="password"
                         name="password" 
                         required
                         class="w-full px-3 py-2 border rounded-full focus:outline-none focus:ring-2 focus:ring-emerald-500"
                         placeholder="password"
                     >
                 </div>
+
+                <!--Session Error Message-->
+                <?php
+                if (isset($_SESSION['error'])): ?>
+                    <p class="text-sm text-red-500 mt-3">
+                        <?= $_SESSION['error']; ?>
+                    </p>
+                    <?php unset($_SESSION['error']); endif; ?>
 
                 <!-- Remember Me Checkbox -->
                 <div class="flex items-center gap-2">

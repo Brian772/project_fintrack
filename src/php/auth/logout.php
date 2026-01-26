@@ -1,6 +1,6 @@
 <?php
 session_start();
-include 'config/conection.php';
+include '../config/connection.php';
 
 if(isset($_SESSION['user_id'])) {
     mysqli_query(
