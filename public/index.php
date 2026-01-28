@@ -1,13 +1,7 @@
 <?php
 session_start();
-
 if (isset($_GET['from']) && $_GET['from'] === 'register') {
     unset($_SESSION['login']);
-}
-
-if (isset($_SESSION['login'])) {
-    header("Location: ./dashboard.php");
-    exit;
 }
 ?>
 
@@ -17,20 +11,36 @@ if (isset($_SESSION['login'])) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="./css/output.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <title>Login | KeuanganKu</title>
+    <title>Apalah | Login</title>
 </head>
-<body class="font-['Inter']">
-    <header class="w-full h-16 bg-white shadow-md flex items-center px-6 z-10">
+<body class="font-['Inter'] bg-gray-100">
+    <header class="w-full h-16 bg-white border-b border-gray-200 flex items-center px-6 z-10">
         <div class="flex items-center gap-2">
             <span class="p-2 bg-emerald-500 rounded-md text-center text-white font-extrabold text-balance">KU</span>
-            <h1 class="text-xl font-extrabold text-emerald-600">KeuanganKu</h1>
+            <h1 class="text-xl font-extrabold text-emerald-600">Apalah</h1>
         </div>
     </header><br>
 
+    <!-- Session Success Message -->
+    <?php if (isset($_SESSION['success'])): ?>
+        <div id="successModal" class="fixed flex top-20 right-1 -translate-x-1 items-center justify-end z-50 mr-4 pointer-events-none">
+            <div class="w-full max-w-md bg-white border rounded-2xl shadow-xl p-5 text-center pointer-events-auto relative">
+                <div class="text-emerald-500 text-xl mb-3">
+                    <i class="fa-solid fa-circle-check fa-3x"></i>
+                    <h2 class="text-lg font-bold mb-2">Registration Success</h2>
+                    <p class="text-sm text-gray-400 mb-5">
+                        <?= $_SESSION['success']; ?>
+                    </p>
+                </div>
+            </div>
+            <?php unset($_SESSION['success']); endif?>
+        </div>
+
     <!-- Login Form -->
-    <div class="fixed inset-0 bg-black/40 flex items-center justify-center z-20">
+    <div class="min-h-screen fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center px-4 z-40">
         <div class="w-full max-w-md max-h-min bg-white rounded-xl shadow-xl p-8 relative">
             <h2 class=" text-2xl font-extrabold text-center mb-2 text-emerald-800">
                 Login
@@ -54,13 +64,23 @@ if (isset($_SESSION['login'])) {
                     <label for="password" class="block text-sm font-medium text-gray-600 mb-1">
                         Password :
                     </label>
-                    <input 
-                        type="password"
-                        name="password" 
-                        required
-                        class="w-full px-3 py-2 border rounded-full focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                        placeholder="password"
-                    >
+                    <div class="flex items-center gap-2">
+                        <input
+                            type="password"
+                            id="password"
+                            name="password"
+                            class="flex-1 px-3 py-2 border rounded-full focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                            placeholder="password"
+                            required
+                        >
+                        <button
+                            type="button"
+                            onclick="togglePasswordVisibility(this)"
+                            class="text-emerald-500 hover:text-emerald-700 flex items-center justify-center p-2"
+                        >
+                            <i class="fa-solid fa-eye"></i>
+                        </button>
+                    </div>
                 </div>
 
                 <!--Session Error Message-->
@@ -93,4 +113,5 @@ if (isset($_SESSION['login'])) {
         </div>
     </div>
 </body>
+<script src="./js/main.js"></script>
 </html>

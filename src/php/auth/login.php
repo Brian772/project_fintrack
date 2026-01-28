@@ -33,10 +33,12 @@ session_Start();
                 "/"
             );
 
+            $_SESSION['success'] = "Login successful";
             header("Location: ../../../public/dashboard.php");
             exit;
-        }
-
+            }
+            
+        $_SESSION['success'] = "Login successful";
         header("Location: ../../../public/dashboard.php");
         exit;
 

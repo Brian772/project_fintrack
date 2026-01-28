@@ -27,27 +27,92 @@ session_start();
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>Apalah | Dashboard</title>
     <link rel="stylesheet" href="./css/output.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
-<body class="font-['Inter']">
-    <header class=" fixed w-full h-16 bg-white shadow-md flex items-center px-6 justify-between">
-        <div class="flex items-center gap-2">
-            <span class="p-2 bg-emerald-500 rounded-md text-center text-white font-extrabold text-balance">KU</span>
-            <h1 class="text-xl font-extrabold text-emerald-600">KeuanganKu</h1>
+<body class="font-['Inter'] bg-slate-50 text-slate-800">
+    <!-- Session Success Message -->
+    <?php if (isset($_SESSION['success'])): ?>
+        <div id="successModal" class="fixed flex top-20 right-1 -translate-x-1 items-center justify-end z-50 mr-4 pointer-events-none">
+            <div class="w-full max-w-md bg-white border rounded-2xl shadow-xl p-5 text-center pointer-events-auto relative">
+                <div class="text-emerald-500 text-xl mb-3">
+                    <i class="fa-solid fa-circle-check fa-3x"></i>
+                    <h2 class="text-lg font-bold mb-2">Login Success</h2>
+                    <p class="text-sm text-gray-400 mb-5">
+                        <?= $_SESSION['success']; ?>
+                    </p>
+                </div>
+            </div>
+            <?php unset($_SESSION['success']); endif?>
         </div>
-        <button class="flex items-center gap-2"> <!-- dummy Profile Button -->
-            <span class="hidden sm:block text-sm">John Doe</span>
-            <img src="" alt="Profile" class="w-9 h-9 sm:w-10 sm:h-10 rounded-full object-cover bg-gray-300">
-        </button>
-    </header>
 
-    <!-- Side Bar -->
-    <div>
+    <div class="flex h-screen overflow-hidden">
+    <!-- Sidebar -->
+        <aside class="w-64 bg-white border-r border-gray-200 hidden md:flex flex-col">
+            <div class="p-6 flex items-center gap-2">
+                <div class="bg-emerald-600 p-2 rounded-lg text-white font-bold">KU</div>
+                <h1 class="text-xl font-bold tracking-tight text-emerald-950">KeuanganKu</h1>
+            </div>
+            <nav class="flex-1 px-4 space-y-1 mt-4">
+                <a href="./dashboard.php" class="block px-4 py-2 rounded-lg text-gray-700 hover:bg-emerald-100 hover:text-emerald-900 font-medium">
+                    <i class="fa-solid fa-chart-line mr-2"></i> Dashboard
+                </a>
+                <a href="#" class="block px-4 py-2 rounded-lg text-gray-700 hover:bg-emerald-100 hover:text-emerald-900 font-medium">
+                    <i class="fa-solid fa-wallet mr-2"></i> Transactions
+                </a>
+                <a href="#" class="block px-4 py-2 rounded-lg text-gray-700 hover:bg-emerald-100 hover:text-emerald-900 font-medium">
+                    <i class="fa-solid fa-cog mr-2"></i> Settings
+                </a>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 h-screen overflow-y-auto">
+            <!-- Header -->
+            <header class="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between sticky top-0 z-10">
+                <h2 class="text-2xl font-bold text-slate-800">Overview</h2>
+                <!-- Profile -->
+                <button class="flex items-center gap-2">
+                    <span class="hidden sm:block text-sm">Hello, John Doe</span>
+                    <img src="" alt="Profile" class="w-9 h-9 sm:w-10 sm:h-10 rounded-full object-cover bg-gray-300">
+                </button>
+            </header>
+
+            <!-- Dashboard Content -->
+            <div class="p-6 max-w-7xl mx-auto space-y-6">
+                <!-- Cards Section -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="bg-white rounded-lg border border-gray-200 p-6">
+                        <h3 class="text-lg font-semibold mb-4">Content</h3>
+                        <p class="text-slate-600">The Main Content Will Appear Here</p>
+                    </div>
+                    <div class="bg-white rounded-lg border border-gray-200 p-6">
+                        <h3 class="text-lg font-semibold mb-4">Content</h3>
+                        <p class="text-slate-600">The Main Content Will Appear Here</p>
+                    </div>
+                    <div class="bg-white rounded-lg border border-gray-200 p-6">
+                        <h3 class="text-lg font-semibold mb-4">Content</h3>
+                        <p class="text-slate-600">The Main Content Will Appear Here</p>
+                    </div>
+                </div>
+
+                <!-- Charts Section -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    <div class="bg-white rounded-lg border border-gray-200 p-6">
+                        <h3 class="text-lg font-semibold mb-4">Chart</h3>
+                        <p class="text-slate-600">Chart Will Appear Here</p>
+                    </div>
+                    <div class="bg-white rounded-lg border border-gray-200 p-6">
+                        <h3 class="text-lg font-semibold mb-4">Chart</h3>
+                        <p class="text-slate-600">Chart Will Appear Here</p>
+                    </div>
+                </div>
+            </div>
+        </main>
     </div>
-    
 </body>
 <script src="./js/main.js"></script>
 </html>
