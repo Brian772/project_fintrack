@@ -39,6 +39,22 @@ $data = [
 
 $success = updateTransaction($conn, $transaction_id, $_SESSION['user_id'], $data);
 
+if (isset($_POST['ajax']) || (isset($_SERVER['HTTP_ACCEPT']) && strpos($_SERVER['HTTP_ACCEPT'], 'application/json') !== false)) {
+    header('Content-Type: application/json');
+    if ($success) {
+        echo json_encode(['success' => true, 'message' => "Transaction updated successfully!"]);
+    } else {
+        $error = "Failed to update transaction";
+        if (!empty($GLOBALS['stmt_error'])) {
+            $error .= ": " . $GLOBALS['stmt_error'];
+        } elseif ($conn->error) {
+            $error .= ": " . $conn->error;
+        }
+        echo json_encode(['success' => false, 'message' => $error]);
+    }
+    exit;
+}
+
 if ($success) {
     $_SESSION['success'] = "Transaction updated successfully!";
 } else {

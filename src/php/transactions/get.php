@@ -7,8 +7,9 @@ if (!isset($_SESSION['user_id'])) {
     exit;
 }
 
-require '../../config/connection.php';
+require '../config/connection.php';
 require '../functions/transactions.php';
+ob_clean();
 
 $transaction_id = $_GET['id'] ?? null;
 
@@ -25,4 +26,3 @@ if (!$transaction) {
 }
 
 echo json_encode($transaction);
-?>

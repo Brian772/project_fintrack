@@ -34,7 +34,7 @@ function getAllTransactions($conn, $user_id, $filters = []) {
     $whereSql = implode(" AND ", $where);
     $orderBy = $filters['order_by'] ?? 'tanggal DESC';
     
-    $sql = "SELECT id, ket, tanggal, nominal, tipe
+    $sql = "SELECT id, ket, tanggal, nominal, tipe, kategori, aset
             FROM transactions 
             WHERE $whereSql 
             ORDER BY $orderBy";
@@ -144,26 +144,35 @@ function getTransactionById($conn, $transaction_id, $user_id) {
 function deleteTransaction($conn, $transaction_id, $user_id) {
     $q = $conn->prepare("DELETE FROM transactions WHERE id = ? AND user_id = ?");
     $q->bind_param("ii", $transaction_id, $user_id);
-    return $q->execute();
+    if (!$q->execute()) {
+        $GLOBALS['stmt_error'] = $q->error;
+        return false;
+    }
+    return true;
 }
 
 function updateTransaction($conn, $transaction_id, $user_id, $data) {
     $q = $conn->prepare("
         UPDATE transactions 
-        SET nominal = ?, tipe = ?, ket = ?, tanggal = ?
+        SET nominal = ?, tipe = ?, ket = ?, tanggal = ?, kategori = ?, aset = ?
         WHERE id = ? AND user_id = ?
     ");
     
     $q->bind_param(
-        "isssii",
+        "isssssii",
         $data['nominal'],
         $data['tipe'],
         $data['ket'],
         $data['tanggal'],
+        $data['kategori'],
+        $data['aset'],
         $transaction_id,
         $user_id
     );
     
-    return $q->execute();
+    if (!$q->execute()) {
+        $GLOBALS['stmt_error'] = $q->error;
+        return false;
+    }
+    return true;
 }
-?>

@@ -60,7 +60,7 @@ session_start();
             <div class="w-full max-w-md bg-white border rounded-2xl shadow-xl p-5 text-center pointer-events-auto relative">
                 <div class="text-emerald-500 text-xl mb-3">
                     <i class="fa-solid fa-circle-check fa-3x"></i>
-                    <h2 class="text-lg font-bold mb-2">Login Success</h2>
+                    <h2 class="text-lg font-bold mb-2">Success</h2>
                     <p class="text-sm text-gray-400 mb-5">
                         <?= $_SESSION['success']; ?>
                     </p>
@@ -143,7 +143,7 @@ session_start();
                             <div class="flex items-center justify-between border-b border-gray-50 pb-2">
                                 <div>
                                     <p class="font-semibold text-sm"><?= $trx['ket'] ?></p>
-                                    <p class="text-xs text-slate-400"><?= $trx['tanggal'] ?></p>
+                                    <p class="text-xs text-slate-400"><i class="fa-regular fa-calendar mr-1"></i><?= date('d M Y', strtotime($trx['tanggal'])) ?></p>
                                 </div>
                                 <span class="font-bold text-sm <?= $trx['tipe'] == 'masuk' ? 'text-emerald-600' : 'text-rose-600' ?>">
                                     <?= formatRupiah($trx['nominal']) ?>
@@ -151,7 +151,7 @@ session_start();
                             </div>
                             <?php endforeach; ?>
                         </div>
-                        <button id="btnLihatSemua" class="w-full mt-4 py-2 border rounded-lg text-sm text-slate-600 hover:bg-gray-50">Lihat Semua</button>
+                        <a href="./transactions.php" class="w-full mt-4 py-2 border rounded-lg text-sm text-slate-600 hover:bg-gray-50 block text-center">Lihat Semua</a>
                     </div>
                 </div>
 
@@ -161,48 +161,71 @@ session_start();
                         <i class="fa-solid fa-plus"></i>
                     </button>
                 </div>
-
-                <!-- Quick Add Modal -->
-                <div id="transactionModal" class="min-h-screen fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center px-4 z-40 hidden">
-                    <div class="bg-white rounded-xl w-96 p-6">
-                        <h2 class="text-2xl font-bold mb-4 text-emerald-800">Add Transaction</h2>
-
-                        <form action="../src/php/transactions/store.php" method="POST" class="space-y-4">
-                            <!-- Input Nominal -->
-                            <div class="mb-4">
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Nominal</label>
-                                <input
-                                    type="text"
-                                    id="nominalInput"
-                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 text-lg font-semibold"
-                                    placeholder="Rp 0"
-                                    autocomplete="off"
-                                    required
-                                >
-                                <input type="hidden" name="nominal" id="nominalHidden">
-                            </div>
-
-                            <select name="tipe" class="w-full border rounded-lg mb-4 p-2" required>
-                                <option value="" disabled selected>Select Type</option>
-                                <option value="masuk">Income</option>
-                                <option value="keluar">Expense</option>
-                            </select>
-                            <input
-                                type="text"
-                                class="w-full mb-4 px-3 py-4 border rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                                name="ket"
-                                placeholder="Description"
-                                required
-                            >
-                            <div class="flex justify-end gap-2">
-                                <button type="button" id="closeModal" class="px-4 py-2 border rounded-lg text-slate-600 hover:bg-gray-50">Cancel</button>
-                                <button type="submit" class="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700">Add</button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
             </div>
         </main>
+    </div>
+
+    <!-- Add Transaction Modal -->
+    <div id="transactionModal" class="min-h-screen fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center px-4 z-40 hidden">
+        <div class="bg-white rounded-xl w-full max-w-md p-6">
+            <h2 class="text-2xl font-bold mb-4 text-emerald-800">Add Transaction</h2>
+
+            <form action="../src/php/transactions/store.php" method="POST" class="space-y-4">
+                <!-- Input Nominal -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Nominal</label>
+                    <input
+                        type="text"
+                        id="nominalInput"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 text-lg font-semibold"
+                        placeholder="Rp 0"
+                        autocomplete="off"
+                        required
+                    >
+                    <input type="hidden" name="nominal" id="nominalHidden">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Type</label>
+                    <select name="tipe" class="w-full border rounded-lg p-2" required>
+                        <option value="" disabled selected>Select Type</option>
+                        <option value="masuk">Income</option>
+                        <option value="keluar">Expense</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Date & Time</label>
+                    <input type="datetime-local" name="tanggal" class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500" value="<?= date('Y-m-d\TH:i') ?>">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Category</label>
+                    <input type="text" name="kategori" class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500" placeholder="e.g. Food, Salary">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Asset</label>
+                    <input type="text" name="aset" class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500" placeholder="e.g. Cash, Bank">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                    <input
+                        type="text"
+                        class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                        name="ket"
+                        placeholder="Description"
+                        required
+                    >
+                </div>
+
+                <div class="flex justify-end gap-2 pt-2">
+                    <button type="button" id="closeModal" class="px-4 py-2 border rounded-lg text-slate-600 hover:bg-gray-50">Cancel</button>
+                    <button type="submit" class="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700">Add</button>
+                </div>
+            </form>
+        </div>
     </div>
 </body>
 </html>

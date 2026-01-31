@@ -20,6 +20,25 @@ $filters = [
 // Get transactions and stats
 $transactions = getAllTransactions($conn, $_SESSION['user_id'], $filters);
 $stats = getTransactionStats($conn, $_SESSION['user_id'], $filters);
+
+// Group transactions by date
+$groupedTransactions = [];
+foreach ($transactions as $trx) {
+    $date = date('Y-m-d', strtotime($trx['tanggal']));
+    if (!isset($groupedTransactions[$date])) {
+        $groupedTransactions[$date] = [
+            'income' => 0,
+            'expense' => 0,
+            'items' => []
+        ];
+    }
+    $groupedTransactions[$date]['items'][] = $trx;
+    if ($trx['tipe'] === 'masuk') {
+        $groupedTransactions[$date]['income'] += $trx['nominal'];
+    } else {
+        $groupedTransactions[$date]['expense'] += $trx['nominal'];
+    }
+}
 ?>
 
 <!DOCTYPE html>
@@ -34,6 +53,74 @@ $stats = getTransactionStats($conn, $_SESSION['user_id'], $filters);
 </head>
 
 <body class="font-['Inter'] bg-slate-50 text-slate-800">
+    <!-- Session Messages -->
+    <!-- Session Messages (Redesigned) -->
+    <?php if (isset($_SESSION['success'])): ?>
+        <div id="successModal" class="fixed flex top-6 right-6 items-center justify-end z-50 pointer-events-none animate-slide-in">
+            <div class="bg-white border border-emerald-100 rounded-xl shadow-lg p-4 flex items-center gap-4 pointer-events-auto min-w-[300px]">
+                <div class="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0">
+                    <i class="fa-solid fa-check text-emerald-600 text-lg"></i>
+                </div>
+                <div>
+                    <h4 class="font-bold text-slate-800 text-sm">Success</h4>
+                    <p class="text-xs text-slate-500"><?= $_SESSION['success']; ?></p>
+                </div>
+            </div>
+            <?php unset($_SESSION['success']); ?>
+            <script>
+                setTimeout(() => {
+                    const modal = document.getElementById('successModal');
+                    if(modal) {
+                        modal.classList.add('opacity-0', 'translate-x-full', 'transition-all', 'duration-300');
+                        setTimeout(() => modal.remove(), 300);
+                    }
+                }, 3000);
+            </script>
+        </div>
+    <?php endif; ?>
+
+    <!-- Custom Delete Confirmation Modal -->
+    <div id="deleteModal" class="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center px-4 z-50 hidden opacity-0 transition-opacity duration-300">
+        <div class="bg-white rounded-2xl w-full max-w-sm p-6 transform scale-95 transition-transform duration-300" id="deleteModalContent">
+            <div class="text-center">
+                <div class="w-16 h-16 bg-rose-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fa-solid fa-trash-can text-rose-500 text-2xl"></i>
+                </div>
+                <h3 class="text-lg font-bold text-slate-800 mb-2">Hapus Transaksi?</h3>
+                <p class="text-sm text-slate-500 mb-6">Apakah Anda yakin ingin menghapus transaksi ini? Tindakan ini tidak dapat dibatalkan.</p>
+                
+                <div class="flex gap-3 justify-center">
+                    <button id="cancelDelete" class="px-5 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-medium hover:bg-slate-50 transition-colors w-full">
+                        Batal
+                    </button>
+                    <button id="confirmDelete" class="px-5 py-2.5 rounded-xl bg-rose-600 text-white font-medium hover:bg-rose-700 transition-colors w-full shadow-lg shadow-rose-200">
+                        Hapus
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <?php if (isset($_SESSION['error'])): ?>
+        <div id="errorModal" class="fixed flex top-20 right-1 -translate-x-1 items-center justify-end z-50 mr-4 pointer-events-none">
+            <div class="w-full max-w-md bg-white border rounded-2xl shadow-xl p-5 text-center pointer-events-auto relative">
+                <div class="text-rose-500 text-xl mb-3">
+                    <i class="fa-solid fa-circle-xmark fa-3x"></i>
+                    <h2 class="text-lg font-bold mb-2">Error</h2>
+                    <p class="text-sm text-gray-400 mb-5">
+                        <?= $_SESSION['error']; ?>
+                    </p>
+                </div>
+            </div>
+            <?php unset($_SESSION['error']); ?>
+            <script>
+                setTimeout(() => {
+                    document.getElementById('errorModal').remove();
+                }, 3000);
+            </script>
+        </div>
+    <?php endif; ?>
+
     <div class="flex h-screen overflow-hidden">
         <!-- Sidebar -->
         <aside class="w-64 bg-white border-r border-gray-200 hidden md:flex flex-col">
@@ -60,7 +147,7 @@ $stats = getTransactionStats($conn, $_SESSION['user_id'], $filters);
         </aside>
 
         <!-- Main Content -->
-        <main class="flex-1 h-screen overflow-y-auto">
+        <main class="flex-1 h-screen overflow-y-auto bg-slate-50">
             <!-- Header -->
             <header class="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between sticky top-0 z-10">
                 <h2 class="text-2xl font-bold text-slate-800">Transactions</h2>
@@ -70,106 +157,118 @@ $stats = getTransactionStats($conn, $_SESSION['user_id'], $filters);
                 </button>
             </header>
 
-            <div class="p-6 max-w-7xl mx-auto space-y-6">
-                <!-- Stats Cards -->
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
-                        <p class="text-sm text-slate-500">Total Income</p>
-                        <h3 class="text-2xl font-bold text-emerald-600"><?= formatRupiah($stats['income']) ?></h3>
-                    </div>
-                    <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
-                        <p class="text-sm text-slate-500">Total Expense</p>
-                        <h3 class="text-2xl font-bold text-rose-600"><?= formatRupiah($stats['expense']) ?></h3>
-                    </div>
-                    <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
-                        <p class="text-sm text-slate-500">Net Balance</p>
-                        <h3 class="text-2xl font-bold text-slate-800"><?= formatRupiah($stats['balance']) ?></h3>
+            <div class="p-4 max-w-5xl mx-auto space-y-6">
+                <!-- Stats Summary (Compact) -->
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 relative overflow-hidden">
+                    <div class="flex justify-between items-center text-center divide-x divide-slate-500">
+                        <div class="flex-1 px-2">
+                            <p class="text-xs text-slate-500 mb-1">Pendapatan</p>
+                            <h3 class="text-lg font-bold text-emerald-600"><?= formatRupiah($stats['income']) ?></h3>
+                        </div>
+                        <div class="flex-1 px-2">
+                            <p class="text-xs text-slate-500 mb-1">Pengeluaran</p>
+                            <h3 class="text-lg font-bold text-rose-600"><?= formatRupiah($stats['expense']) ?></h3>
+                        </div>
+                        <div class="flex-1 px-2">
+                            <p class="text-xs text-slate-500 mb-1">Total</p>
+                            <h3 class="text-lg font-bold text-slate-800"><?= formatRupiah($stats['balance']) ?></h3>
+                        </div>
                     </div>
                 </div>
 
-                <!-- Filters & Search -->
-                <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
-                    <form method="GET" class="space-y-4">
-                        <!-- Search Bar -->
-                        <div class="relative">
-                            <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
-                            <input 
-                                type="text" 
-                                name="search" 
-                                value="<?= htmlspecialchars($filters['search']) ?>"
-                                placeholder="Search transactions..." 
-                                class="w-full pl-11 pr-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                            >
-                        </div>
-
-                        <!-- Filter Buttons -->
-                        <div class="flex flex-wrap gap-3">
-                            <a href="?type=" class="px-4 py-2 rounded-lg border-2 <?= empty($filters['type']) ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-gray-200 text-gray-600 hover:border-gray-300' ?> font-medium transition-all">
-                                All
-                            </a>
-                            <a href="?type=masuk<?= !empty($filters['search']) ? '&search=' . urlencode($filters['search']) : '' ?>" class="px-4 py-2 rounded-lg border-2 <?= $filters['type'] === 'masuk' ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-gray-200 text-gray-600 hover:border-gray-300' ?> font-medium transition-all">
-                                <i class="fa-solid fa-arrow-down text-emerald-600"></i> Income
-                            </a>
-                            <a href="?type=keluar<?= !empty($filters['search']) ? '&search=' . urlencode($filters['search']) : '' ?>" class="px-4 py-2 rounded-lg border-2 <?= $filters['type'] === 'keluar' ? 'border-rose-500 bg-rose-50 text-rose-700' : 'border-gray-200 text-gray-600 hover:border-gray-300' ?> font-medium transition-all">
-                                <i class="fa-solid fa-arrow-up text-rose-600"></i> Expense
-                            </a>
-                            
-                            <button type="submit" class="ml-auto px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 font-medium">
-                                <i class="fa-solid fa-filter mr-2"></i>Apply Filters
-                            </button>
-                        </div>
-                    </form>
+                <!-- Filters & Search (Simplified) -->
+                <div class="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
+                    <a href="?type=" class="px-4 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors <?= empty($filters['type']) ? 'bg-slate-800 text-white' : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50' ?>">
+                        Harian
+                    </a>
+                    <a href="?type=masuk" class="px-4 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors <?= $filters['type'] === 'masuk' ? 'bg-emerald-600 text-white' : 'bg-white text-emerald-600 border border-emerald-100 hover:bg-emerald-50' ?>">
+                        Pemasukan
+                    </a>
+                    <a href="?type=keluar" class="px-4 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors <?= $filters['type'] === 'keluar' ? 'bg-rose-600 text-white' : 'bg-white text-rose-600 border border-rose-100 hover:bg-rose-50' ?>">
+                        Pengeluaran
+                    </a>
                 </div>
 
-                <!-- Transactions List -->
-                <div class="space-y-3">
-                    <?php if (empty($transactions)): ?>
-                        <div class="bg-white p-12 rounded-xl shadow-sm border border-gray-100 text-center">
-                            <i class="fa-solid fa-inbox text-6xl text-gray-300 mb-4"></i>
-                            <h3 class="text-xl font-semibold text-gray-600 mb-2">No Transactions Found</h3>
-                            <p class="text-gray-500">Start by adding your first transaction!</p>
+                <!-- Grouped Transactions List -->
+                <div class="space-y-6 pb-20">
+                    <?php if (empty($groupedTransactions)): ?>
+                        <div class="text-center py-12">
+                            <i class="fa-solid fa-file-invoice text-4xl text-slate-300 mb-3"></i>
+                            <p class="text-slate-500">Belum ada transaksi</p>
                         </div>
                     <?php else: ?>
-                        <?php foreach($transactions as $trx): ?>
-                            <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
-                                <div class="flex items-center justify-between">
-                                    <div class="flex items-center gap-4">
-                                        <!-- Icon -->
-                                        <div class="w-12 h-12 rounded-full flex items-center justify-center <?= $trx['tipe'] === 'masuk' ? 'bg-emerald-100' : 'bg-rose-100' ?>">
-                                            <i class="fa-solid <?= $trx['tipe'] === 'masuk' ? 'fa-arrow-down text-emerald-600' : 'fa-arrow-up text-rose-600' ?> text-xl"></i>
-                                        </div>
-                                        
-                                        <!-- Info -->
-                                        <div>
-                                            <h4 class="font-semibold text-slate-800"><?= htmlspecialchars($trx['ket']) ?></h4>
-                                            <div class="flex items-center gap-3 text-sm text-slate-500 mt-1">
-                                                <span><i class="fa-regular fa-calendar mr-1"></i><?= date('d M Y, H:i', strtotime($trx['tanggal'])) ?></span>
-                                                <?php if (!empty($trx['kategori'])): ?>
-                                                    <span><i class="fa-solid fa-tag mr-1"></i><?= htmlspecialchars($trx['kategori']) ?></span>
-                                                <?php endif; ?>
-                                                <?php if (!empty($trx['aset'])): ?>
-                                                    <span><i class="fa-solid fa-wallet mr-1"></i><?= htmlspecialchars($trx['aset']) ?></span>
-                                                <?php endif; ?>
+                        <?php foreach($groupedTransactions as $date => $group): ?>
+                            <div class="transaction-group">
+                                <!-- Date Header -->
+                                <div class="flex justify-between items-end mb-3 px-2">
+                                    <div class="flex items-baseline gap-2">
+                                        <span class="text-2xl font-bold text-slate-800"><?= date('d', strtotime($date)) ?></span>
+                                        <span class="text-xs font-bold text-slate-500 bg-slate-200 px-1.5 py-0.5 rounded"><?= date('D', strtotime($date)) ?></span>
+                                        <span class="text-xs text-slate-400"><?= date('M . Y', strtotime($date)) ?></span>
+                                    </div>
+                                    <div class="text-right flex gap-3 text-xs font-semibold">
+                                        <?php if($group['income'] > 0): ?>
+                                            <span class="text-emerald-500 mr-8">+ Rp <?= number_format($group['income'], 0, ',', '.') ?></span>
+                                        <?php endif; ?>
+                                        <?php if($group['expense'] > 0): ?>
+                                            <span class="text-rose-500  mr-8">- Rp <?= number_format($group['expense'], 0, ',', '.') ?></span>
+                                        <?php endif; ?>
+                                    </div>
+                                </div>
+
+                                <!-- Transaction Cards -->
+                                <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+                                    <?php foreach($group['items'] as $trx): ?>
+                                        <div class="p-4 border-b border-slate-50 last:border-0 hover:bg-slate-50 transition-colors cursor-pointer relative">
+                                            
+                                            <div class="flex items-start justify-between gap-3">
+                                                <div class="flex items-start gap-3 flex-1 overflow-hidden">
+                                                    <!-- Icon -->
+                                                    <div class="w-10 h-10 rounded-full flex-shrink-0 flex items-center justify-center text-xl
+                                                        <?= $trx['tipe'] === 'masuk' ? 'bg-emerald-50 text-emerald-500' : 'bg-yellow-50 text-yellow-500' ?>">
+                                                        <?php if($trx['tipe'] === 'masuk'): ?>
+                                                            <i class="fa-solid fa-money-bill-wave"></i>
+                                                        <?php else: ?>
+                                                            <i class="fa-solid fa-bag-shopping"></i> 
+                                                        <?php endif; ?>
+                                                    </div>
+                                                    
+                                                    <!-- Details -->
+                                                    <div class="flex-1 min-w-0">
+                                                        <h4 class="font-medium text-slate-700 truncate pr-2">
+                                                            <?= !empty($trx['kategori']) ? htmlspecialchars($trx['kategori']) : 'Umum' ?>
+                                                        </h4>
+                                                        <div class="text-xs text-slate-400 mt-0.5 flex flex-col sm:flex-row gap-1">
+                                                            <span class="truncate"><?= htmlspecialchars($trx['ket']) ?></span>
+                                                            <?php if (!empty($trx['aset'])): ?>
+                                                                <span class="hidden sm:inline">•</span>
+                                                                <span class="text-slate-500"><?= htmlspecialchars($trx['aset']) ?></span>
+                                                            <?php endif; ?>
+                                                            <span class="hidden sm:inline">•</span>
+                                                            <span class="text-slate-500"><?= date('H:i', strtotime($trx['tanggal'])) ?></span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                
+                                                <!-- Amount & Actions -->
+                                                <div class="flex flex-col items-end gap-1 flex-shrink-0">
+                                                    <span class="block font-bold <?= $trx['tipe'] === 'masuk' ? 'text-emerald-500' : 'text-rose-500' ?>">
+                                                        <?= $trx ['tipe'] === 'masuk' ? '+ Rp ' . number_format($trx['nominal'], 0, ',', '.') : '- Rp ' . number_format($trx['nominal'], 0, ',', '.') ?>
+                                                    </span>
+                                                    
+                                                    <!-- Action Buttons (Always visible) -->
+                                                    <div class="flex gap-1 mt-1">
+                                                        <button onclick="editTransaction(<?= $trx['id'] ?>)" class="text-xs text-blue-600 hover:bg-blue-50 px-2 py-1 rounded transition-colors" title="Edit">
+                                                            Edit
+                                                        </button>
+                                                        <button onclick="deleteTransaction(<?= $trx['id'] ?>)" class="text-xs text-rose-600 hover:bg-rose-50 px-2 py-1 rounded transition-colors" title="Delete">
+                                                            Hapus
+                                                        </button>
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
-                                    
-                                    <!-- Amount & Actions -->
-                                    <div class="flex items-center gap-4">
-                                        <span class="text-xl font-bold <?= $trx['tipe'] === 'masuk' ? 'text-emerald-600' : 'text-rose-600' ?>">
-                                            <?= $trx['tipe'] === 'masuk' ? '+' : '-' ?><?= formatRupiah($trx['nominal']) ?>
-                                        </span>
-                                        
-                                        <!-- Action Buttons -->
-                                        <div class="flex gap-2">
-                                            <button onclick="editTransaction(<?= $trx['id'] ?>)" class="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Edit">
-                                                <i class="fa-solid fa-pen-to-square"></i>
-                                            </button>
-                                            <button onclick="deleteTransaction(<?= $trx['id'] ?>)" class="p-2 text-rose-600 hover:bg-rose-50 rounded-lg transition-colors" title="Delete">
-                                                <i class="fa-solid fa-trash"></i>
-                                            </button>
-                                        </div>
-                                    </div>
+                                    <?php endforeach; ?>
                                 </div>
                             </div>
                         <?php endforeach; ?>
@@ -222,7 +321,7 @@ $stats = getTransactionStats($conn, $_SESSION['user_id'], $filters);
 
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">Description</label>
-                    <input type="text" name="ket" id="editKet" class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500" placeholder="Description" required>
+                    <input type="text" name="ket" id="editKet" class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500" placeholder="Description">
                 </div>
 
                 <div class="flex justify-end gap-2 pt-2">
@@ -235,24 +334,45 @@ $stats = getTransactionStats($conn, $_SESSION['user_id'], $filters);
 
     <!-- Add Transaction Modal -->
     <div id="transactionModal" class="min-h-screen fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center px-4 z-40 hidden">
-        <div class="bg-white rounded-xl w-96 p-6">
+        <div class="bg-white rounded-xl w-full max-w-md p-6">
             <h2 class="text-2xl font-bold mb-4 text-emerald-800">Add Transaction</h2>
             <form action="../src/php/transactions/store.php" method="POST" class="space-y-4">
-                <div class="mb-4">
+                <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">Nominal</label>
-                    <input type="text" id="nominalInput" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 text-lg font-semibold" placeholder="Rp 0" autocomplete="off" required>
+                    <input type="text" id="nominalInput" class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 text-lg font-semibold" placeholder="Rp 0" autocomplete="off" required>
                     <input type="hidden" name="nominal" id="nominalHidden">
                 </div>
 
-                <select name="tipe" class="w-full border rounded-lg mb-4 p-2" required>
-                    <option value="" disabled selected>Select Type</option>
-                    <option value="masuk">Income</option>
-                    <option value="keluar">Expense</option>
-                </select>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Type</label>
+                    <select name="tipe" class="w-full border rounded-lg p-2" required>
+                        <option value="" disabled selected>Select Type</option>
+                        <option value="masuk">Income</option>
+                        <option value="keluar">Expense</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Date & Time</label>
+                    <input type="datetime-local" name="tanggal" class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500" value="<?= date('Y-m-d\TH:i') ?>">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Category</label>
+                    <input type="text" name="kategori" class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500" placeholder="e.g. Food, Salary" required>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Asset</label>
+                    <input type="text" name="aset" class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500" placeholder="e.g. Cash, Bank" required>
+                </div>
                 
-                <input type="text" class="w-full mb-4 px-3 py-4 border rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500" name="ket" placeholder="Description" required>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Description <span class="text-gray-400 font-normal">(Optional)</span></label>
+                    <input type="text" class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500" name="ket" placeholder="Description">
+                </div>
                 
-                <div class="flex justify-end gap-2">
+                <div class="flex justify-end gap-2 pt-2">
                     <button type="button" id="closeModal" class="px-4 py-2 border rounded-lg text-slate-600 hover:bg-gray-50">Cancel</button>
                     <button type="submit" class="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700">Add</button>
                 </div>

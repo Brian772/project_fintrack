@@ -7,26 +7,35 @@ if (!isset($_SESSION['user_id'])) {
     exit;
 }
 
+date_default_timezone_set('Asia/Jakarta');
 $user_id = $_SESSION['user_id'];
 $nominal = $_POST['nominal'];
 $tipe = $_POST['tipe'];
-$ket = $_POST['ket'];
-$tanggal = date('Y-m-d');
+$ket = !empty($_POST['ket']) ? $_POST['ket'] : '-';
+$tanggal = !empty($_POST['tanggal']) ? $_POST['tanggal'] : date('Y-m-d H:i:s');
+$kategori = $_POST['kategori'];
+$aset = $_POST['aset'];
 
 $query = $conn->prepare("
-    INSERT INTO transactions (user_id, ket, nominal, tipe, tanggal)
-    VALUES (?, ?, ?, ?, ?)
+    INSERT INTO transactions (user_id, ket, nominal, tipe, tanggal, kategori, aset)
+    VALUES (?, ?, ?, ?, ?, ?, ?)
 ");
 
 $query->bind_param(
-    "isiss",
+    "isissss",
     $user_id,
     $ket,
     $nominal,
     $tipe,
-    $tanggal
+    $tanggal,
+    $kategori,
+    $aset
 );
 
 $query->execute();
 
-header("Location: ../../../public/dashboard.php");
+if (isset($_SERVER['HTTP_REFERER']) && !empty($_SERVER['HTTP_REFERER'])) {
+    header("Location: " . $_SERVER['HTTP_REFERER']);
+} else {
+    header("Location: ../../../public/dashboard.php");
+}

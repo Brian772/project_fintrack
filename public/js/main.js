@@ -103,6 +103,19 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (openModalBtn && closeModalBtn && modal) {
         openModalBtn.onclick = () => {
+            // Set default date to now
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+
+            const dateInput = modal.querySelector('input[name="tanggal"]');
+            if (dateInput) {
+                dateInput.value = `${year}-${month}-${day}T${hours}:${minutes}`;
+            }
+
             modal.classList.remove("hidden");
             modal.classList.add("flex");
         };
@@ -127,7 +140,7 @@ document.addEventListener("DOMContentLoaded", () => {
         function formatCurrency(input) {
             // Get only digits
             let value = input.value.replace(/\D/g, '');
-            
+
             if (!value || value === '0') {
                 input.value = '';
                 nominalHidden.value = '';
@@ -136,23 +149,23 @@ document.addEventListener("DOMContentLoaded", () => {
             // Convert to number and format
             const numberValue = parseInt(value, 10);
             const formatted = numberValue.toLocaleString('id-ID');
-            
+
             // Update inputs
             input.value = 'Rp ' + formatted;
             nominalHidden.value = numberValue;
         }
         // On input event (typing, paste, etc)
-        nominalInput.addEventListener('input', function(e) {
+        nominalInput.addEventListener('input', function (e) {
             formatCurrency(e.target);
         });
         // On focus, clear placeholder behavior
-        nominalInput.addEventListener('focus', function(e) {
+        nominalInput.addEventListener('focus', function (e) {
             if (e.target.value === '' || e.target.value === 'Rp 0') {
                 e.target.value = '';
             }
         });
         // Prevent paste of non-numeric
-        nominalInput.addEventListener('paste', function(e) {
+        nominalInput.addEventListener('paste', function (e) {
             e.preventDefault();
             const pastedText = (e.clipboardData || window.clipboardData).getData('text');
             const onlyNumbers = pastedText.replace(/\D/g, '');

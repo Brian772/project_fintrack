@@ -53,6 +53,19 @@ const modal = document.getElementById('transactionModal');
 
 if (openModalBtn && closeModalBtn && modal) {
     openModalBtn.onclick = () => {
+        // Set default date to now
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        const hours = String(now.getHours()).padStart(2, '0');
+        const minutes = String(now.getMinutes()).padStart(2, '0');
+
+        const dateInput = modal.querySelector('input[name="tanggal"]');
+        if (dateInput) {
+            dateInput.value = `${year}-${month}-${day}T${hours}:${minutes}`;
+        }
+
         modal.classList.remove('hidden');
         modal.classList.add('flex');
     };
@@ -73,6 +86,7 @@ if (openModalBtn && closeModalBtn && modal) {
 // Modal handlers for Edit Transaction
 const editModal = document.getElementById('editModal');
 const closeEditModalBtn = document.getElementById('closeEditModal');
+const editForm = document.getElementById('editForm');
 
 if (closeEditModalBtn && editModal) {
     closeEditModalBtn.onclick = () => {
@@ -88,14 +102,57 @@ if (closeEditModalBtn && editModal) {
     };
 }
 
+// Handle Edit Form Submission via AJAX
+if (editForm) {
+    editForm.addEventListener('submit', function (e) {
+        e.preventDefault();
+
+        const formData = new FormData(this);
+        formData.append('ajax', '1'); // Flag for PHP to return JSON
+
+        fetch(this.action, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'Accept': 'application/json'
+            }
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Determine if we should reload or update UI
+                    // For now, reload to reflect changes strictly
+                    window.location.reload();
+                } else {
+                    alert(data.message || 'Failed to update transaction');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while updating');
+            });
+    });
+}
+
 // Edit transaction function
 function editTransaction(id) {
     // Fetch transaction data via AJAX
     fetch(`../src/php/transactions/get.php?id=${id}`)
-        .then(response => response.json())
+        .then(async response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            const text = await response.text();
+            try {
+                return JSON.parse(text);
+            } catch (e) {
+                console.error('Server response:', text);
+                throw new Error('Invalid JSON response from server');
+            }
+        })
         .then(data => {
             if (data.error) {
-                alert('Transaction not found');
+                alert(data.error);
                 return;
             }
 
@@ -132,25 +189,77 @@ function editTransaction(id) {
         })
         .catch(error => {
             console.error('Error:', error);
-            alert('Failed to load transaction data');
+            alert('Failed to load transaction data: ' + error.message);
         });
 }
 
-// Delete transaction function
-function deleteTransaction(id) {
-    if (confirm('Are you sure you want to delete this transaction?')) {
-        // Create a form and submit
-        const form = document.createElement('form');
-        form.method = 'POST';
-        form.action = '../src/php/transactions/delete.php';
+// Custom Delete Modal Logic
+let transactionIdToDelete = null;
+const deleteModal = document.getElementById('deleteModal');
+const deleteModalContent = document.getElementById('deleteModalContent');
+const confirmDeleteBtn = document.getElementById('confirmDelete');
+const cancelDeleteBtn = document.getElementById('cancelDelete');
 
-        const inputId = document.createElement('input');
-        inputId.type = 'hidden';
-        inputId.name = 'id';
-        inputId.value = id;
-
-        form.appendChild(inputId);
-        document.body.appendChild(form);
-        form.submit();
+function showDeleteModal(id) {
+    transactionIdToDelete = id;
+    if (deleteModal && deleteModalContent) {
+        deleteModal.classList.remove('hidden');
+        // Small delay to allow display:block to apply before opacity transition
+        setTimeout(() => {
+            deleteModal.classList.remove('opacity-0');
+            deleteModalContent.classList.remove('scale-95');
+            deleteModalContent.classList.add('scale-100');
+        }, 10);
     }
+}
+
+function hideDeleteModal() {
+    transactionIdToDelete = null;
+    if (deleteModal && deleteModalContent) {
+        deleteModal.classList.add('opacity-0');
+        deleteModalContent.classList.remove('scale-100');
+        deleteModalContent.classList.add('scale-95');
+        setTimeout(() => {
+            deleteModal.classList.add('hidden');
+        }, 300);
+    }
+}
+
+if (confirmDeleteBtn) {
+    confirmDeleteBtn.onclick = () => {
+        if (transactionIdToDelete) {
+            // Create a form and submit
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = '../src/php/transactions/delete.php';
+
+            const inputId = document.createElement('input');
+            inputId.type = 'hidden';
+            inputId.name = 'id';
+            inputId.value = transactionIdToDelete;
+
+            form.appendChild(inputId);
+            document.body.appendChild(form);
+            form.submit();
+        }
+    };
+}
+
+if (cancelDeleteBtn) {
+    cancelDeleteBtn.onclick = () => {
+        hideDeleteModal();
+    };
+}
+
+// Close on background click
+if (deleteModal) {
+    deleteModal.onclick = (e) => {
+        if (e.target === deleteModal) {
+            hideDeleteModal();
+        }
+    };
+}
+
+function deleteTransaction(id) {
+    showDeleteModal(id);
 }
