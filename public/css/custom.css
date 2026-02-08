@@ -1,0 +1,53 @@
+/* Mobile Sidebar Transitions */
+#mobileSidebar {
+  transition: transform 0.3s ease-in-out;
+  transform: translateX(-100%);
+  display: flex !important;
+  z-index: 50;
+}
+
+/* Open state for mobile sidebar */
+#mobileSidebar.is-open {
+  transform: translateX(0) !important;
+}
+
+/* Mobile Sidebar Overlay */
+#mobileSidebarOverlay {
+  transition: opacity 0.3s ease-in-out;
+  display: none;
+  opacity: 0;
+  z-index: 40;
+}
+
+#mobileSidebarOverlay.is-open {
+  display: block !important;
+  opacity: 1 !important;
+}
+
+/* Desktop Sidebar */
+#desktopSidebar {
+  display: none !important;
+}
+
+/* Media Query for Desktop (md: 768px) */
+@media (min-width: 768px) {
+  /* Hide Mobile Sidebar & Overlay on Desktop */
+  #mobileSidebar,
+  #mobileSidebarOverlay,
+  #hamburgerBtn {
+    display: none !important;
+  }
+
+  /* Show Desktop Sidebar on Desktop */
+  #desktopSidebar {
+    display: flex !important;
+    width: 16rem; /* w-64 */
+    flex-direction: column;
+    border-right-width: 1px;
+  }
+}
+
+
+.hidden {
+  display: none !important;
+}

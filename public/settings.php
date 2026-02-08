@@ -78,9 +78,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if (isset($_POST['update_preferences'])) {
-        $theme = $_POST['theme'];
-        $language = $_POST['language'];
-        $currency = $_POST['currency'];
+        // Get current settings to preserve theme if not posted
+        $currentSettings = getUserSettings($conn, $_SESSION['user_id']);
+        
+        $theme = $_POST['theme'] ?? $currentSettings['theme'] ?? 'light';
+        $language = $_POST['language'] ?? 'id';
+        $currency = $_POST['currency'] ?? 'IDR';
 
         if (updateUserPreferences($conn, $_SESSION['user_id'], $theme, $language, $currency)) {
             $_SESSION['success'] = 'Preferences updated successfully!';
@@ -91,19 +94,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
-    if (isset($_POST['update_budget'])) {
-        $monthly_budget = (float) $_POST['monthly_budget'];
-        $category_budgets = json_encode($_POST['category_budgets'] ?? []);
-        $alert_threshold = (float) $_POST['alert_threshold'];
-
-        if (updateUserBudget($conn, $_SESSION['user_id'], $monthly_budget, $category_budgets, $alert_threshold)) {
-            $_SESSION['success'] = 'Budget settings updated successfully!';
-        } else {
-            $_SESSION['error'] = 'Failed to update budget settings.';
-        }
-        header("Location: settings.php");
-        exit;
-    }
 
     if (isset($_POST['export_data'])) {
         $data = exportUserData($conn, $_SESSION['user_id']);
@@ -141,6 +131,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 // Get current settings
 $userSettings = getUserSettings($conn, $_SESSION['user_id']);
 $userBudget = getUserBudget($conn, $_SESSION['user_id']);
+$lang = getTranslations($userSettings['language'] ?? 'id');
 ?>
 
 <!DOCTYPE html>
@@ -156,8 +147,10 @@ $userBudget = getUserBudget($conn, $_SESSION['user_id']);
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FinTrack | Settings</title>
     <link rel="stylesheet" href="./css/output.css">
+    <link rel="stylesheet" href="./css/custom.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="./js/main.js"></script>
 </head>
 
 <body class="font-['Inter'] bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100">
@@ -207,8 +200,38 @@ $userBudget = getUserBudget($conn, $_SESSION['user_id']);
     <?php endif; ?>
 
     <div class="flex h-screen overflow-hidden">
-        <!-- Sidebar -->
-        <aside class="w-64 bg-white dark:bg-slate-800 border-r border-gray-200 dark:border-slate-700 hidden md:flex flex-col">
+        <!-- Overlay -->
+        <div id="mobileSidebarOverlay" class="fixed inset-0 bg-black/50 z-40 hidden opacity-0 transition-opacity duration-300 md:hidden"></div>
+
+        <!-- Mobile Sidebar -->
+        <aside id="mobileSidebar" class="fixed inset-y-0 left-0 z-50 w-64 bg-white dark:bg-slate-800 border-r border-gray-200 dark:border-slate-700 transform -translate-x-full transition-transform duration-300 md:hidden flex flex-col">
+            <div class="p-6 flex items-center justify-between">
+                <div class="flex gap-2 flex-row items-center">
+                    <img src="./../src/img/logo.png" alt="Logo" class="w-10 h-10 object-contain rounded-md">
+                    <div class="flex flex-col">
+                        <h1 class="text-2xl font-bold tracking-tight text-emerald-950 dark:text-emerald-400">FinTrack</h1>
+                        <span class="text-xs text-gray-400 dark:text-slate-500">Track Every Worth Precisely</span>
+                    </div>
+                </div>
+                <button onclick="toggleSidebar()" class="text-gray-500 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-200">
+                    <i class="fa-solid fa-times text-xl"></i>
+                </button>
+            </div>
+            <nav class="flex-1 px-4 space-y-1 mt-4">
+                <a href="./dashboard.php" class="block px-4 py-2 rounded-lg text-gray-700 dark:text-slate-300 hover:bg-emerald-100 dark:hover:bg-slate-700 hover:text-emerald-900 dark:hover:text-emerald-400 font-medium">
+                    <i class="fa-solid fa-chart-line mr-2"></i> <?= $lang['dashboard'] ?>
+                </a>
+                <a href="./transactions.php" class="block px-4 py-2 rounded-lg text-gray-700 dark:text-slate-300 hover:bg-emerald-100 dark:hover:bg-slate-700 hover:text-emerald-900 dark:hover:text-emerald-400 font-medium">
+                    <i class="fa-solid fa-wallet mr-2"></i> <?= $lang['transactions'] ?>
+                </a>
+                <a href="#" class="block px-4 py-2 rounded-lg bg-emerald-100 dark:bg-slate-700 text-emerald-900 dark:text-emerald-400 font-medium">
+                    <i class="fa-solid fa-cog mr-2"></i> <?= $lang['settings'] ?>
+                </a>
+            </nav>
+        </aside>
+
+        <!-- Sidebar (Desktop) -->
+        <aside id="desktopSidebar" class="w-64 bg-white dark:bg-slate-800 border-r border-gray-200 dark:border-slate-700 hidden md:flex flex-col">
             <div class="p-6 flex items-center gap-2">
                 <div class="flex gap-2 flex-row">
                     <img src="./../src/img/logo.png" alt="Logo" class="w-10 h-10 object-contain rounded-md">
@@ -220,13 +243,13 @@ $userBudget = getUserBudget($conn, $_SESSION['user_id']);
             </div>
             <nav class="flex-1 px-4 space-y-1 mt-4">
                 <a href="./dashboard.php" class="block px-4 py-2 rounded-lg text-gray-700 dark:text-slate-300 hover:bg-emerald-100 dark:hover:bg-slate-700 hover:text-emerald-900 dark:hover:text-emerald-400 font-medium">
-                    <i class="fa-solid fa-chart-line mr-2"></i> Dashboard
+                    <i class="fa-solid fa-chart-line mr-2"></i> <?= $lang['dashboard'] ?>
                 </a>
                 <a href="./transactions.php" class="block px-4 py-2 rounded-lg text-gray-700 dark:text-slate-300 hover:bg-emerald-100 dark:hover:bg-slate-700 hover:text-emerald-900 dark:hover:text-emerald-400 font-medium">
-                    <i class="fa-solid fa-wallet mr-2"></i> Transactions
+                    <i class="fa-solid fa-wallet mr-2"></i> <?= $lang['transactions'] ?>
                 </a>
                 <a href="#" class="block px-4 py-2 rounded-lg bg-emerald-100 dark:bg-slate-700 text-emerald-900 dark:text-emerald-400 font-medium">
-                    <i class="fa-solid fa-cog mr-2"></i> Settings
+                    <i class="fa-solid fa-cog mr-2"></i> <?= $lang['settings'] ?>
                 </a>
             </nav>
         </aside>
@@ -235,9 +258,14 @@ $userBudget = getUserBudget($conn, $_SESSION['user_id']);
         <main class="flex-1 h-screen overflow-y-auto bg-slate-50 dark:bg-slate-900">
             <!-- Header -->
             <header class="bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700 px-6 py-4 flex items-center justify-between sticky top-0 z-10">
-                <h2 class="text-2xl font-bold text-slate-800 dark:text-slate-100">Settings</h2>
+                <div class="flex items-center gap-4">
+                    <button id="hamburgerBtn" onclick="toggleSidebar()" class="md:hidden text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white">
+                        <i class="fa-solid fa-bars text-xl"></i>
+                    </button>
+                    <h2 class="text-2xl font-bold text-slate-800 dark:text-slate-100"><?= $lang['settings'] ?></h2>
+                </div>
                 <button class="flex items-center gap-2">
-                    <span class="hidden sm:block text-sm dark:text-slate-300">Hello, <?= htmlspecialchars($userSettings['name'] ?? 'User') ?></span>
+                    <span class="sm:block text-sm dark:text-slate-300"><?= $lang['hello'] ?>, <?= htmlspecialchars($userSettings['name'] ?? 'User') ?></span>
                     <?php if (!empty($userSettings['profile_picture'])): ?>
                         <img src="../src/uploads/<?= $userSettings['profile_picture'] ?>" alt="Profile" class="w-9 h-9 sm:w-10 sm:h-10 rounded-full object-cover bg-gray-300">
                     <?php else: ?>
@@ -253,7 +281,7 @@ $userBudget = getUserBudget($conn, $_SESSION['user_id']);
                 <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700 mb-6 overflow-hidden">
                     <div class="section-header flex items-center justify-between p-6 cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700 dark:hover:bg-slate-700" onclick="toggleSection(this)">
                         <h3 class="text-xl font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
-                            <i class="fa-solid fa-user text-emerald-600 dark:text-emerald-400"></i> Profile
+                            <i class="fa-solid fa-user text-emerald-600 dark:text-emerald-400"></i> <?= $lang['profile'] ?>
                         </h3>
                         <i class="fa-solid fa-chevron-right text-gray-400 dark:text-slate-500 transition-transform duration-300 rotate-90"></i>
                     </div>
@@ -261,7 +289,7 @@ $userBudget = getUserBudget($conn, $_SESSION['user_id']);
                     <form method="POST" enctype="multipart/form-data" class="space-y-4">
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">Full Name</label>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2"><?= $lang['full_name'] ?></label>
                                 <input type="text" name="name" value="<?= htmlspecialchars($userSettings['name'] ?? '') ?>" class="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500" required>
                             </div>
                             <div>
@@ -269,18 +297,18 @@ $userBudget = getUserBudget($conn, $_SESSION['user_id']);
                                 <input type="email" name="email" value="<?= htmlspecialchars($userSettings['email']) ?>" class="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500" required>
                             </div>
                         </div>
-<div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">Profile Picture</label>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2"><?= $lang['profile_picture'] ?></label>
                             <div class="flex items-center gap-3">
                                 <label for="profile_picture" class="cursor-pointer inline-flex items-center gap-2 px-4 py-2 bg-emerald-50 dark:bg-slate-700 border border-emerald-200 dark:border-slate-600 rounded-lg text-emerald-700 dark:text-emerald-400 font-medium hover:bg-emerald-100 dark:hover:bg-slate-600 transition-colors">
                                     <i class="fa-solid fa-cloud-arrow-up"></i>
-                                    <span>Choose File</span>
+                                    <span><?= $lang['choose_file'] ?></span>
                                 </label>
                                 <span id="fileName" class="text-sm text-slate-500 dark:text-slate-400 truncate max-w-[200px]">No file chosen</span>
                             </div>
                             <input type="file" id="profile_picture" name="profile_picture" accept="image/*" class="hidden" onchange="document.getElementById('fileName').textContent = this.files[0] ? this.files[0].name : 'No file chosen'">
                         </div>
-                        <button type="submit" name="update_profile" class="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700">Update Profile</button>
+                        <button type="submit" name="update_profile" class="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700"><?= $lang['update_profile'] ?></button>
                     </form>
                     </div>
                 </div>
@@ -289,7 +317,7 @@ $userBudget = getUserBudget($conn, $_SESSION['user_id']);
                 <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700 mb-6 overflow-hidden">
                     <div class="section-header flex items-center justify-between p-6 cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700" onclick="toggleSection(this)">
                         <h3 class="text-xl font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
-                            <i class="fa-solid fa-shield-alt text-emerald-600"></i> Security
+                            <i class="fa-solid fa-shield-alt text-emerald-600"></i> <?= $lang['security'] ?>
                         </h3>
                         <i class="fa-solid fa-chevron-right text-gray-400 dark:text-slate-500 transition-transform duration-300"></i>
                     </div>
@@ -298,48 +326,48 @@ $userBudget = getUserBudget($conn, $_SESSION['user_id']);
                         <!-- Change Password Collapsible -->
                         <div class="border border-gray-200 dark:border-slate-600 rounded-lg overflow-hidden">
                             <div class="flex items-center justify-between p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700 bg-gray-50 dark:bg-slate-700" onclick="toggleSubSection(this)">
-                                <h4 class="text-lg font-semibold text-slate-700 dark:text-slate-200">Change Password</h4>
+                                <h4 class="text-lg font-semibold text-slate-700 dark:text-slate-200"><?= $lang['change_password'] ?></h4>
                                 <i class="fa-solid fa-chevron-down text-gray-400 dark:text-slate-500 transition-transform duration-300"></i>
                             </div>
                             <div class="subsection-content hidden p-4 bg-white dark:bg-slate-800">
                                 <form method="POST" class="space-y-4">
                                     <div>
-                                        <label class="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">Current Password</label>
+                                        <label class="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2"><?= $lang['current_password'] ?></label>
                                         <input type="password" name="current_password" class="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500" required>
                                     </div>
                                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <div>
-                                            <label class="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">New Password</label>
+                                            <label class="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2"><?= $lang['new_password'] ?></label>
                                             <input type="password" name="new_password" class="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500" required>
                                         </div>
                                         <div>
-                                            <label class="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">Confirm New Password</label>
+                                            <label class="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2"><?= $lang['confirm_new_password'] ?></label>
                                             <input type="password" name="confirm_password" class="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500" required>
                                         </div>
                                     </div>
-                                    <button type="submit" name="change_password" class="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700">Change Password</button>
+                                    <button type="submit" name="change_password" class="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700"><?= $lang['change_password'] ?></button>
                                 </form>
                             </div>
                         </div>
 
                         <!-- Email Verification -->
                         <div>
-                            <h4 class="text-lg font-semibold text-slate-700 dark:text-slate-200 mb-3">Email Verification</h4>
+                            <h4 class="text-lg font-semibold text-slate-700 dark:text-slate-200 mb-3"><?= $lang['email_verification'] ?></h4>
                             <?php 
-                            $email_verified = true; // Replace with actual verification check from database
+                            $email_verified = true;
                             if ($email_verified): 
                             ?>
-                                <p class="text-sm text-slate-600 dark:text-slate-400">Your email is <span class="text-emerald-600 dark:text-emerald-400 font-medium">Verified</span></p>
+                                <p class="text-sm text-slate-600 dark:text-slate-400"><?= $lang['your_email_is'] ?> <span class="text-emerald-600 dark:text-emerald-400 font-medium"><?= $lang['verified'] ?></span></p>
                             <?php else: ?>
-                                <p class="text-sm text-slate-600 dark:text-slate-400 mb-3">Your email is not verified.</p>
-                                <button class="px-4 py-2 border border-gray-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700">Resend Verification Email</button>
+                                <p class="text-sm text-slate-600 dark:text-slate-400 mb-3"><?= $lang['not_verified'] ?></p>
+                                <button class="px-4 py-2 border border-gray-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700"><?= $lang['resend_verification'] ?></button>
                             <?php endif; ?>
                         </div>
 
                         <!-- Logout -->
                         <div class="border-t border-gray-200 dark:border-slate-600 pt-4">
-                            <h4 class="text-lg font-semibold text-slate-700 dark:text-slate-200 mb-3">Account Actions</h4>
-                            <a href="../src/php/auth/logout.php" class="inline-block px-4 py-2 bg-rose-600 text-white rounded-lg hover:bg-rose-700">Logout</a>
+                            <h4 class="text-lg font-semibold text-slate-700 dark:text-slate-200 mb-3"><?= $lang['account_actions'] ?></h4>
+                            <a href="../src/php/auth/logout.php" class="inline-block px-4 py-2 bg-rose-600 text-white rounded-lg hover:bg-rose-700"><?= $lang['logout'] ?></a>
                         </div>
                     </div>
                     </div>
@@ -349,69 +377,43 @@ $userBudget = getUserBudget($conn, $_SESSION['user_id']);
                 <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700 mb-6 overflow-hidden">
                     <div class="section-header flex items-center justify-between p-6 cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700" onclick="toggleSection(this)">
                         <h3 class="text-xl font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
-                            <i class="fa-solid fa-palette text-emerald-600"></i> Preferences
+                            <i class="fa-solid fa-palette text-emerald-600"></i> <?= $lang['preferences'] ?>
                         </h3>
                         <i class="fa-solid fa-chevron-right text-gray-400 dark:text-slate-500 transition-transform duration-300"></i>
                     </div>
                     <div class="section-content px-6 pb-6 hidden">
                         <!-- Dark Mode Toggle -->
                         <div class="mb-6 pb-6 border-b border-gray-200 dark:border-slate-600">
-                            <label class="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-3">Dark Mode</label>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-3"><?= $lang['dark_mode'] ?></label>
                             <label class="relative inline-flex items-center cursor-pointer">
                                 <input type="checkbox" id="darkModeToggle" class="sr-only peer" onchange="toggleDarkMode()">
                                 <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-emerald-300 dark:peer-focus:ring-emerald-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-emerald-600"></div>
-                                <span class="ms-3 text-sm font-medium text-gray-700 dark:text-gray-300">Enable Dark Mode</span>
+                                <span class="ms-3 text-sm font-medium text-gray-700 dark:text-gray-300"><?= $lang['enable_dark_mode'] ?></span>
                             </label>
                         </div>
                         
                     <form method="POST" class="space-y-4">
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">Language</label>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2"><?= $lang['language'] ?></label>
                                 <select name="language" class="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500">
                                     <option value="id" <?= ($userSettings['language'] ?? 'id') === 'id' ? 'selected' : '' ?>>Indonesian</option>
                                     <option value="en" <?= ($userSettings['language'] ?? 'id') === 'en' ? 'selected' : '' ?>>English</option>
+                                    <option value="fr" <?= ($userSettings['language'] ?? 'id') === 'fr' ? 'selected' : '' ?>>French</option>
+                                    <option value="rs" <?= ($userSettings['language'] ?? 'id') === 'rs' ? 'selected' : '' ?>>Russian</option>
                                 </select>
                             </div>
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">Currency Format</label>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2"><?= $lang['currency_format'] ?></label>
                                 <select name="currency" class="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500">
                                     <option value="IDR" <?= ($userSettings['currency'] ?? 'IDR') === 'IDR' ? 'selected' : '' ?>>IDR (Rp)</option>
                                     <option value="USD" <?= ($userSettings['currency'] ?? 'IDR') === 'USD' ? 'selected' : '' ?>>USD ($)</option>
                                     <option value="EUR" <?= ($userSettings['currency'] ?? 'IDR') === 'EUR' ? 'selected' : '' ?>>EUR (€)</option>
+                                    <option value="RUB" <?= ($userSettings['currency'] ?? 'IDR') === 'RUB' ? 'selected' : '' ?>>RUB (₽)</option>
                                 </select>
                             </div>
                         </div>
-                        <button type="submit" name="update_preferences" class="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700">Update Preferences</button>
-                    </form>
-                    </div>
-                </div>
-
-                <!-- Budget Settings Section -->
-                <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700 mb-6 overflow-hidden">
-                    <div class="section-header flex items-center justify-between p-6 cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700" onclick="toggleSection(this)">
-                        <h3 class="text-xl font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
-                            <i class="fa-solid fa-chart-pie text-emerald-600"></i> Budget Settings
-                        </h3>
-                        <i class="fa-solid fa-chevron-right text-gray-400 dark:text-slate-500 transition-transform duration-300"></i>
-                    </div>
-                    <div class="section-content px-6 pb-6 hidden">
-                    <form method="POST" class="space-y-4">
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">Monthly Budget</label>
-                                <input type="number" name="monthly_budget" value="<?= $userBudget['monthly_budget'] ?? 0 ?>" step="0.01" class="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500">
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">Alert Threshold (%)</label>
-                                <input type="number" name="alert_threshold" value="<?= $userBudget['alert_threshold'] ?? 80 ?>" min="1" max="100" class="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500">
-                            </div>
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">Category Budgets (JSON format)</label>
-                            <textarea name="category_budgets" rows="4" class="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500" placeholder='{"Food": 500000, "Transport": 300000}'><?= $userBudget['category_budgets'] ?? '{}' ?></textarea>
-                        </div>
-                        <button type="submit" name="update_budget" class="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700">Update Budget Settings</button>
+                        <button type="submit" name="update_preferences" class="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700"><?= $lang['update_preferences'] ?></button>
                     </form>
                     </div>
                 </div>
@@ -420,7 +422,7 @@ $userBudget = getUserBudget($conn, $_SESSION['user_id']);
                 <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700 mb-6 overflow-hidden">
                     <div class="section-header flex items-center justify-between p-6 cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700" onclick="toggleSection(this)">
                         <h3 class="text-xl font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
-                            <i class="fa-solid fa-database text-emerald-600"></i> Data & Account
+                            <i class="fa-solid fa-database text-emerald-600"></i> <?= $lang['data_account'] ?>
                         </h3>
                         <i class="fa-solid fa-chevron-right text-gray-400 dark:text-slate-500 transition-transform duration-300"></i>
                     </div>
@@ -428,32 +430,32 @@ $userBudget = getUserBudget($conn, $_SESSION['user_id']);
                     <div class="space-y-6">
                         <!-- Export Data -->
                         <div>
-                            <h4 class="text-lg font-semibold text-slate-700 dark:text-slate-200 mb-3">Export Data</h4>
-                            <p class="text-sm text-slate-600 mb-3">Download all your financial data in JSON format.</p>
+                            <h4 class="text-lg font-semibold text-slate-700 dark:text-slate-200 mb-3"><?= $lang['export_data'] ?></h4>
+                            <p class="text-sm text-slate-600 mb-3"><?= $lang['download_data_text'] ?></p>
                             <form method="POST" class="inline">
                                 <button type="submit" name="export_data" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-                                    <i class="fa-solid fa-download mr-2"></i>Export as JSON
+                                    <i class="fa-solid fa-download mr-2"></i><?= $lang['export_json'] ?>
                                 </button>
                             </form>
                         </div>
 
                         <!-- Reset Transactions -->
                         <div class="border-t border-gray-200 dark:border-slate-600 pt-6">
-                            <h4 class="text-lg font-semibold text-slate-700 dark:text-slate-200 mb-3">Reset All Transactions</h4>
-                            <p class="text-sm text-slate-600 mb-3">This will permanently delete all your transaction data. This action cannot be undone.</p>
+                            <h4 class="text-lg font-semibold text-slate-700 dark:text-slate-200 mb-3"><?= $lang['reset_transactions'] ?></h4>
+                            <p class="text-sm text-slate-600 mb-3"><?= $lang['reset_transactions_text'] ?></p>
                             <button onclick="confirmReset()" class="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700">
-                                <i class="fa-solid fa-refresh mr-2"></i>Reset All Transactions
+                                <i class="fa-solid fa-refresh mr-2"></i><?= $lang['reset_transactions'] ?>
                             </button>
                         </div>
 
                         <!-- Delete Account (Danger Zone) -->
                         <div class="border-t border-gray-200 dark:border-slate-600 pt-6">
                             <h4 class="text-lg font-semibold text-rose-700 dark:text-rose-400 mb-3 flex items-center gap-2">
-                                <i class="fa-solid fa-triangle-exclamation"></i> Danger Zone
+                                <i class="fa-solid fa-triangle-exclamation"></i> <?= $lang['delete_account_danger'] ?>
                             </h4>
-                            <p class="text-sm text-slate-600 mb-3">Once you delete your account, there is no going back. Please be certain.</p>
+                            <p class="text-sm text-slate-600 mb-3"><?= $lang['delete_account_danger'] ?></p>
                             <button onclick="confirmDelete()" class="px-4 py-2 bg-rose-600 text-white rounded-lg hover:bg-rose-700">
-                                <i class="fa-solid fa-trash-can mr-2"></i>Delete Account
+                                <i class="fa-solid fa-trash-can mr-2"></i><?= $lang['delete_account'] ?>
                             </button>
                         </div>
                     </div>
@@ -470,16 +472,16 @@ $userBudget = getUserBudget($conn, $_SESSION['user_id']);
                 <div class="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-4">
                     <i class="fa-solid fa-triangle-exclamation text-yellow-500 text-2xl"></i>
                 </div>
-                <h3 class="text-lg font-bold text-slate-800 mb-2">Reset All Transactions?</h3>
-                <p class="text-sm text-slate-500 mb-6">This will permanently delete all your transaction data. This action cannot be undone.</p>
+                <h3 class="text-lg font-bold text-slate-800 mb-2"><?= $lang['reset_transactions'] ?>?</h3>
+                <p class="text-sm text-slate-500 mb-6"><?= $lang['reset_transactions_text'] ?></p>
 
                 <div class="flex gap-3 justify-center">
                     <button id="cancelReset" class="px-5 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-medium hover:bg-slate-50 transition-colors w-full">
-                        Cancel
+                        <?= $lang['cancel'] ?>
                     </button>
                     <form method="POST" class="w-full">
                         <button type="submit" name="reset_transactions" class="w-full px-5 py-2.5 rounded-xl bg-yellow-600 text-white font-medium hover:bg-yellow-700 transition-colors">
-                            Reset All
+                            <?= $lang['reset_transactions'] ?>
                         </button>
                     </form>
                 </div>
@@ -494,16 +496,16 @@ $userBudget = getUserBudget($conn, $_SESSION['user_id']);
                 <div class="w-16 h-16 bg-rose-100 rounded-full flex items-center justify-center mx-auto mb-4">
                     <i class="fa-solid fa-trash-can text-rose-500 text-2xl"></i>
                 </div>
-                <h3 class="text-lg font-bold text-slate-800 mb-2">Delete Account?</h3>
-                <p class="text-sm text-slate-500 mb-6">This will permanently delete your account and all associated data. This action cannot be undone.</p>
+                <h3 class="text-lg font-bold text-slate-800 mb-2"><?= $lang['delete_account'] ?>?</h3>
+                <p class="text-sm text-slate-500 mb-6"><?= $lang['delete_account_text'] ?></p>
 
                 <div class="flex gap-3 justify-center">
                     <button id="cancelDeleteAccount" class="px-5 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-medium hover:bg-slate-50 transition-colors w-full">
-                        Cancel
+                        <?= $lang['cancel'] ?>
                     </button>
                     <form method="POST" class="w-full">
                         <button type="submit" name="delete_account" class="w-full px-5 py-2.5 rounded-xl bg-rose-600 text-white font-medium hover:bg-rose-700 transition-colors">
-                            Delete Account
+                            <?= $lang['delete_account'] ?>
                         </button>
                     </form>
                 </div>

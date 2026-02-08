@@ -86,7 +86,13 @@ document.addEventListener("DOMContentLoaded", () => {
                             intersect: false,
                             callbacks: {
                                 label: function (context) {
-                                    return context.dataset.label + ': Rp ' + context.parsed.y.toLocaleString('id-ID');
+                                    const locale = typeof userLocale !== 'undefined' ? userLocale : 'id-ID';
+                                    const currency = typeof userCurrency !== 'undefined' ? userCurrency : 'IDR';
+                                    let prefix = 'Rp ';
+                                    if (currency === 'USD') prefix = '$';
+                                    if (currency === 'EUR') prefix = '€ ';
+
+                                    return context.dataset.label + ': ' + prefix + context.parsed.y.toLocaleString(locale);
                                 }
                             }
                         }
@@ -100,7 +106,14 @@ document.addEventListener("DOMContentLoaded", () => {
                         y: {
                             beginAtZero: true,
                             ticks: {
-                                callback: value => "Rp " + value.toLocaleString("id-ID"),
+                                callback: value => {
+                                    const locale = typeof userLocale !== 'undefined' ? userLocale : 'id-ID';
+                                    const currency = typeof userCurrency !== 'undefined' ? userCurrency : 'IDR';
+                                    let prefix = 'Rp ';
+                                    if (currency === 'USD') prefix = '$';
+                                    if (currency === 'EUR') prefix = '€ ';
+                                    return prefix + value.toLocaleString(locale);
+                                },
                             },
                             grid: {
                                 color: '#f3f4f6'
@@ -295,10 +308,17 @@ document.addEventListener("DOMContentLoaded", () => {
             }
             // Convert to number and format
             const numberValue = parseInt(value, 10);
-            const formatted = numberValue.toLocaleString('id-ID');
+
+            const locale = typeof userLocale !== 'undefined' ? userLocale : 'id-ID';
+            const currency = typeof userCurrency !== 'undefined' ? userCurrency : 'IDR';
+            let prefix = 'Rp ';
+            if (currency === 'USD') prefix = '$';
+            if (currency === 'EUR') prefix = '€ ';
+
+            const formatted = numberValue.toLocaleString(locale);
 
             // Update inputs
-            input.value = 'Rp ' + formatted;
+            input.value = prefix + formatted;
             nominalHidden.value = numberValue;
         }
         // On input event (typing, paste, etc)
@@ -307,7 +327,12 @@ document.addEventListener("DOMContentLoaded", () => {
         });
         // On focus, clear placeholder behavior
         nominalInput.addEventListener('focus', function (e) {
-            if (e.target.value === '' || e.target.value === 'Rp 0') {
+            const currency = typeof userCurrency !== 'undefined' ? userCurrency : 'IDR';
+            let prefix = 'Rp ';
+            if (currency === 'USD') prefix = '$';
+            if (currency === 'EUR') prefix = '€ ';
+
+            if (e.target.value === '' || e.target.value === prefix + '0') {
                 e.target.value = '';
             }
         });
@@ -339,6 +364,28 @@ document.addEventListener("DOMContentLoaded", () => {
 
         if (type === 'success') {
             setTimeout(() => messageDiv.remove(), 3000);
+        }
+    }
+});
+
+// Mobile Sidebar Toggle
+function toggleSidebar() {
+    const sidebar = document.getElementById('mobileSidebar');
+    const overlay = document.getElementById('mobileSidebarOverlay');
+
+    if (sidebar && overlay) {
+        sidebar.classList.toggle('is-open');
+        overlay.classList.toggle('is-open');
+    }
+}
+
+// Close sidebar when clicking overlay
+document.addEventListener('click', function (event) {
+    const overlay = document.getElementById('mobileSidebarOverlay');
+
+    if (overlay && overlay.classList.contains('is-open')) {
+        if (event.target === overlay) {
+            toggleSidebar();
         }
     }
 });

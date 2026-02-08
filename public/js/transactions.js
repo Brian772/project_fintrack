@@ -14,9 +14,18 @@ function setupCurrencyFormat(inputId, hiddenId) {
             }
 
             const numberValue = parseInt(value, 10);
-            const formatted = numberValue.toLocaleString('id-ID');
 
-            input.value = 'Rp ' + formatted;
+            // Get user settings (defined in global scope in PHP files)
+            const locale = typeof userLocale !== 'undefined' ? userLocale : 'id-ID';
+            const currency = typeof userCurrency !== 'undefined' ? userCurrency : 'IDR';
+
+            let prefix = 'Rp ';
+            if (currency === 'USD') prefix = '$';
+            if (currency === 'EUR') prefix = '€ ';
+
+            const formatted = numberValue.toLocaleString(locale);
+
+            input.value = prefix + formatted;
             nominalHidden.value = numberValue;
         }
 
@@ -25,7 +34,12 @@ function setupCurrencyFormat(inputId, hiddenId) {
         });
 
         nominalInput.addEventListener('focus', function (e) {
-            if (e.target.value === '' || e.target.value === 'Rp 0') {
+            const currency = typeof userCurrency !== 'undefined' ? userCurrency : 'IDR';
+            let prefix = 'Rp ';
+            if (currency === 'USD') prefix = '$';
+            if (currency === 'EUR') prefix = '€ ';
+
+            if (e.target.value === '' || e.target.value === prefix + '0') {
                 e.target.value = '';
             }
         });
@@ -109,7 +123,7 @@ if (addTransactionForm) {
                         modal.classList.remove('flex');
                         // Reload page to show new transaction
                         window.location.reload();
-                    }, 1500);
+                    }, 1000);
                 } else {
                     showModalMessage(data.message || 'Failed to add transaction', 'error');
                 }
@@ -285,8 +299,15 @@ function editTransaction(id) {
             const editNominalInput = document.getElementById('editNominalInput');
             const editNominalHidden = document.getElementById('editNominalHidden');
             if (data.nominal) {
-                const formattedNominal = parseInt(data.nominal).toLocaleString('id-ID');
-                editNominalInput.value = 'Rp ' + formattedNominal;
+                const locale = typeof userLocale !== 'undefined' ? userLocale : 'id-ID';
+                const currency = typeof userCurrency !== 'undefined' ? userCurrency : 'IDR';
+
+                let prefix = 'Rp ';
+                if (currency === 'USD') prefix = '$';
+                if (currency === 'EUR') prefix = '€ ';
+
+                const formattedNominal = parseInt(data.nominal).toLocaleString(locale);
+                editNominalInput.value = prefix + formattedNominal;
                 editNominalHidden.value = data.nominal;
             }
 

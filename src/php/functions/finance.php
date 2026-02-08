@@ -1,6 +1,21 @@
 <?php
+function formatCurrency($amount, $currency = 'IDR') {
+    switch ($currency) {
+        case 'IDR':
+            return 'Rp ' . number_format($amount, 0, ',', '.');
+        case 'USD':
+            return '$ ' . number_format($amount, 2, '.', ',');
+        case 'EUR':
+            return '€ ' . number_format($amount, 2, ',', '.');
+        case 'RUB':
+            return '₽ ' . number_format($amount, 2, ',', '.');
+        default:
+            return 'Rp ' . number_format($amount, 0, ',', '.');
+    }
+}
+
 function formatRupiah($angka) {
-    return 'Rp ' . number_format($angka, 0, ',', '.');
+    return formatCurrency($angka, 'IDR');
 }
 
 function getDashboardData($conn, $user_id) {
