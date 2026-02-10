@@ -186,6 +186,12 @@ document.addEventListener("DOMContentLoaded", () => {
         const addTransactionForm = modal.querySelector('form');
 
         openModalBtn.onclick = () => {
+            // Generate a unique form token for deduplication
+            const formToken = document.getElementById('formToken');
+            if (formToken) {
+                formToken.value = Date.now().toString(36) + Math.random().toString(36).substr(2, 9);
+            }
+
             // Set default date to now
             const now = new Date();
             const year = now.getFullYear();

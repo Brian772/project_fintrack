@@ -47,8 +47,11 @@ if (isset($_POST['ajax']) || (isset($_SERVER['HTTP_ACCEPT']) && strpos($_SERVER[
         $error = "Failed to update transaction";
         if (!empty($GLOBALS['stmt_error'])) {
             $error .= ": " . $GLOBALS['stmt_error'];
-        } elseif ($conn->error) {
-            $error .= ": " . $conn->error;
+        } else {
+            $errorInfo = $conn->errorInfo();
+            if ($errorInfo[0] != '00000') {
+                $error .= ": " . $errorInfo[2];
+            }
         }
         echo json_encode(['success' => false, 'message' => $error]);
     }

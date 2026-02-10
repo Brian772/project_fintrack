@@ -1,52 +1,43 @@
 <?php
-session_Start();
-    include '../config/connection.php';
+session_start();
+require '../config/connection_sqlite.php';
 
-    $email = trim($_POST['email']);
-    $password = $_POST['password'];
+$email = trim($_POST['email']);
+$password = $_POST['password'];
 
-    $stmt = $conn->prepare("SELECT * FROM users WHERE email=?");
-    $stmt->bind_param("s", $email);
-    $stmt->execute();
-    $result = $stmt->get_result()-> fetch_assoc();
+// Use prepared statement to prevent SQL injection
+$stmt = $conn->prepare("SELECT * FROM users WHERE email = :email");
+$stmt->bindParam(':email', $email);
+$stmt->execute();
+$user = $stmt->fetch(PDO::FETCH_ASSOC);
 
-    $query = mysqli_query(
-        $conn,
-        "SELECT * FROM users WHERE email='$email'"
-    );
+if ($user && password_verify($password, $user['password'])) {
 
-    $user = mysqli_fetch_assoc($query);
+    $_SESSION['user_id'] = $user['id'];
+    $_SESSION['email'] = $user['email'];
 
-    if ($user && password_verify($password, $user['password'])) {
+    if (isset($_POST['remember'])) {
+        $token = bin2hex(random_bytes(32));
 
-        $_SESSION['user_id'] = $user['id'];
-        $_SESSION['email'] = $user['email'];
+        $update = $conn->prepare("UPDATE users SET remember_token = :token WHERE id = :id");
+        $update->bindParam(':token', $token);
+        $update->bindParam(':id', $user['id']);
+        $update->execute();
 
-        if (isset($_POST['remember'])) {
-            $token = bin2hex(random_bytes(32));
-
-            mysqli_query(
-                $conn,
-                "UPDATE users SET remember_token='$token' WHERE id=".$user['id']
-            );
-
-            setcookie(
-                "remember_token",
-                $token,
-                time() + (86400 * 30), // 30 days
-                "/"
-            );
-
-            $_SESSION['success'] = "Login successful";
-            header("Location: ../../../public/dashboard.php");
-            exit;
-            }
-            
-        $_SESSION['success'] = "Login successful";
-        header("Location: ../../../public/dashboard.php");
-        exit;
-
-    } else {
-        $_SESSION['error'] = "Invalid email or password.";
-        header("Location: ../../../public/index.php");
+        setcookie(
+            "remember_token",
+            $token,
+            time() + (86400 * 30), // 30 days
+            "/"
+        );
     }
+        
+    $_SESSION['success'] = "Login successful";
+    header("Location: ../../../public/dashboard.php");
+    exit;
+
+} else {
+    $_SESSION['error'] = "Invalid email or password.";
+    header("Location: ../../../public/index.php");
+}
+?>

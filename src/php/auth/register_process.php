@@ -1,40 +1,39 @@
 <?php
 session_start();
-    include '../config/connection.php';
+require '../config/connection_sqlite.php';
 
-    $email            = $_POST['email'];
-    $password         = $_POST['password'];
-    $confirm_password = $_POST['confirm_password'];
+$email = $_POST['email'];
+$password = $_POST['password'];
+$confirm_password = $_POST['confirm_password'];
 
-    $check = mysqli_query(
-        $conn,
-        "SELECT id FROM users WHERE email='$email'"
-    );
-    if (mysqli_num_rows($check) > 0) {
-        session_start();
-        $_SESSION['error'] = "Email already registered.";
-        header("Location: ../../../public/register.php");
-        exit;
-    }
-    if ($_POST['password'] !== $_POST['confirm_password']) {
-        session_start();
-        $_SESSION['error'] = "Password and Confirm Password do not match.";
-        header("Location: ../../../public/register.php");
-        exit;
-    }
+// Check if email already exists
+$stmt = $conn->prepare("SELECT id FROM users WHERE email = :email");
+$stmt->bindParam(':email', $email);
+$stmt->execute();
 
-    $password = ($_POST['password']);
-    $hashed_password = password_hash($password, PASSWORD_DEFAULT);
+if ($stmt->fetch()) {
+    $_SESSION['error'] = "Email already registered.";
+    header("Location: ../../../public/register.php");
+    exit;
+}
 
-    $query = mysqli_query(
-        $conn,
-        "INSERT INTO users (email, password)
-        VALUES ('$email', '$hashed_password')"
-    );
+if ($password !== $confirm_password) {
+    $_SESSION['error'] = "Password and Confirm Password do not match.";
+    header("Location: ../../../public/register.php");
+    exit;
+}
 
-    if ($query) {
-        $_SESSION['success'] = "Registration successful";
-        header("Location: ../../../public/index.php");
-    } else {
-        echo "Registration failed.";
-    }
+$hashed_password = password_hash($password, PASSWORD_DEFAULT);
+
+// Insert new user
+$stmt = $conn->prepare("INSERT INTO users (email, password) VALUES (:email, :password)");
+$stmt->bindParam(':email', $email);
+$stmt->bindParam(':password', $hashed_password);
+
+if ($stmt->execute()) {
+    $_SESSION['success'] = "Registration successful";
+    header("Location: ../../../public/index.php");
+} else {
+    echo "Registration failed.";
+}
+?>

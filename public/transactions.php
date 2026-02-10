@@ -145,7 +145,7 @@ $currency = $userSettings['currency'] ?? 'IDR';
                     <img src="../src/img/logo.png" alt="Logo" class="w-10 h-10 object-contain rounded-md">
                     <div class="flex flex-col">
                         <h1 class="text-2xl font-bold tracking-tight text-emerald-950 dark:text-emerald-400">FinTrack</h1>
-                        <span class="text-xs text-gray-400 dark:text-slate-500"><?= $lang['track_text'] ?></span>
+                        <span class="text-xs text-gray-400 dark:text-slate-500">Track Every Worth Precisely</span>
                     </div>
                 </div>
                 <button onclick="toggleSidebar()" class="text-gray-500 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-200">
@@ -172,7 +172,7 @@ $currency = $userSettings['currency'] ?? 'IDR';
                     <img src="../src/img/logo.png" alt="Logo" class="w-10 h-10 object-contain rounded-md">
                     <div class="flex flex-col items-center md:items-start">
                         <h1 class="text-2xl font-bold tracking-tight text-emerald-950 dark:text-emerald-400">FinTrack</h1>
-                        <span class="text-xs text-gray-400 dark:text-slate-500"><?= $lang['track_text'] ?></span>
+                        <span class="text-xs text-gray-400 dark:text-slate-500">Track Every Worth Precisely</span>
                     </div>
                 </div>
             </div>
@@ -232,7 +232,7 @@ $currency = $userSettings['currency'] ?? 'IDR';
 
                 <!-- Filters & Search (Simplified) -->
                 <div class="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
-                    <a href="?type=" class="px-4 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors <?= empty($filters['type']) ? 'bg-slate-800 dark:bg-slate-700 text-white' : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700' ?>">
+                    <a href="?type=" class="px-4 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors <?= empty($filters['type']) ? 'bg-slate-800 text-white' : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700' ?>">
                         Harian
                     </a>
                     <a href="?type=masuk" class="px-4 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors <?= $filters['type'] === 'masuk' ? 'bg-emerald-600 text-white' : 'bg-white dark:bg-slate-800 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900 hover:bg-emerald-50 dark:hover:bg-emerald-900' ?>">
@@ -397,6 +397,7 @@ $currency = $userSettings['currency'] ?? 'IDR';
         <div class="bg-white dark:bg-slate-800 rounded-xl w-full max-w-md p-6">
             <h2 class="text-2xl font-bold mb-4 text-emerald-800 dark:text-emerald-400"><?= $lang['add_transaction'] ?></h2>
             <form action="../src/php/transactions/store.php" method="POST" class="space-y-4">
+                <input type="hidden" name="form_token" id="formToken" value="">
                 <!-- Input Nominal -->
                 <div>
                     <label class="block text-sm font-medium text-gray-700 dark:text-white mb-2"><?= $lang['nominal'] ?></label>

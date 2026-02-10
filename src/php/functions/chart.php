@@ -7,20 +7,20 @@ function getChartData($conn, $user_id, $filter = 'week') {
     if ($filter == 'week') {
         // Last 7 days
         $days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
-        for ($i = 0; $i <= 6; $i++) {
-            $date = date('Y-m-d', strtotime("+$i days"));
+        
+        // Loop 6 days ago to today (7 days total)
+        for ($i = 0; $i <= 6; $i--) {
+            $date = date('Y-m-d', strtotime("+$i days")); 
             $dayOfWeek = date('w', strtotime($date));
             $labels[] = $days[$dayOfWeek];
 
-            $qI = $conn->prepare("SELECT SUM(nominal) as total FROM transactions WHERE user_id=? AND tipe='masuk' AND DATE(tanggal)=?");
-            $qI->bind_param("is", $user_id, $date);
-            $qI->execute();
-            $incomeData[] = (int)($qI->get_result()->fetch_assoc()['total'] ?? 0);
+            $qI = $conn->prepare("SELECT SUM(nominal) as total FROM transactions WHERE user_id=? AND tipe='masuk' AND date(tanggal)=?");
+            $qI->execute([$user_id, $date]);
+            $incomeData[] = (int)($qI->fetch(PDO::FETCH_ASSOC)['total'] ?? 0);
 
-            $qE = $conn->prepare("SELECT SUM(nominal) as total FROM transactions WHERE user_id=? AND tipe='keluar' AND DATE(tanggal)=?");
-            $qE->bind_param("is", $user_id, $date);
-            $qE->execute();
-            $expenseData[] = (int)($qE->get_result()->fetch_assoc()['total'] ?? 0);
+            $qE = $conn->prepare("SELECT SUM(nominal) as total FROM transactions WHERE user_id=? AND tipe='keluar' AND date(tanggal)=?");
+            $qE->execute([$user_id, $date]);
+            $expenseData[] = (int)($qE->fetch(PDO::FETCH_ASSOC)['total'] ?? 0);
         }
     } elseif ($filter == 'month') {
         // Current Month (Daily)
@@ -30,19 +30,17 @@ function getChartData($conn, $user_id, $filter = 'week') {
         
         for ($d = 1; $d <= $daysInMonth; $d++) {
             $date = sprintf("%04d-%02d-%02d", $currentYear, $currentMonth, $d);
-            $date = date('Y-m-d', strtotime($date));
-
+            // $date string is YYYY-MM-DD
+            
             $labels[] = $d;
 
-            $qI = $conn->prepare("SELECT SUM(nominal) as total FROM transactions WHERE user_id=? AND tipe='masuk' AND DATE(tanggal)=?");
-            $qI->bind_param("is", $user_id, $date);
-            $qI->execute();
-            $incomeData[] = (int)($qI->get_result()->fetch_assoc()['total'] ?? 0);
+            $qI = $conn->prepare("SELECT SUM(nominal) as total FROM transactions WHERE user_id=? AND tipe='masuk' AND date(tanggal)=?");
+            $qI->execute([$user_id, $date]);
+            $incomeData[] = (int)($qI->fetch(PDO::FETCH_ASSOC)['total'] ?? 0);
 
-            $qE = $conn->prepare("SELECT SUM(nominal) as total FROM transactions WHERE user_id=? AND tipe='keluar' AND DATE(tanggal)=?");
-            $qE->bind_param("is", $user_id, $date);
-            $qE->execute();
-            $expenseData[] = (int)($qE->get_result()->fetch_assoc()['total'] ?? 0);
+            $qE = $conn->prepare("SELECT SUM(nominal) as total FROM transactions WHERE user_id=? AND tipe='keluar' AND date(tanggal)=?");
+            $qE->execute([$user_id, $date]);
+            $expenseData[] = (int)($qE->fetch(PDO::FETCH_ASSOC)['total'] ?? 0);
         }
     } elseif ($filter == 'year') {
         // Current Year (Monthly)
@@ -52,15 +50,15 @@ function getChartData($conn, $user_id, $filter = 'week') {
         for ($m = 1; $m <= 12; $m++) {
             $labels[] = $months[$m-1];
             
-            $qI = $conn->prepare("SELECT SUM(nominal) as total FROM transactions WHERE user_id=? AND tipe='masuk' AND MONTH(tanggal)=? AND YEAR(tanggal)=?");
-            $qI->bind_param("iii", $user_id, $m, $currentYear);
-            $qI->execute();
-            $incomeData[] = (int)($qI->get_result()->fetch_assoc()['total'] ?? 0);
+            $mPadded = sprintf("%02d", $m);
+            
+            $qI = $conn->prepare("SELECT SUM(nominal) as total FROM transactions WHERE user_id=? AND tipe='masuk' AND strftime('%m', tanggal)=? AND strftime('%Y', tanggal)=?");
+            $qI->execute([$user_id, $mPadded, (string)$currentYear]);
+            $incomeData[] = (int)($qI->fetch(PDO::FETCH_ASSOC)['total'] ?? 0);
 
-            $qE = $conn->prepare("SELECT SUM(nominal) as total FROM transactions WHERE user_id=? AND tipe='keluar' AND MONTH(tanggal)=? AND YEAR(tanggal)=?");
-            $qE->bind_param("iii", $user_id, $m, $currentYear);
-            $qE->execute();
-            $expenseData[] = (int)($qE->get_result()->fetch_assoc()['total'] ?? 0);
+            $qE = $conn->prepare("SELECT SUM(nominal) as total FROM transactions WHERE user_id=? AND tipe='keluar' AND strftime('%m', tanggal)=? AND strftime('%Y', tanggal)=?");
+            $qE->execute([$user_id, $mPadded, (string)$currentYear]);
+            $expenseData[] = (int)($qE->fetch(PDO::FETCH_ASSOC)['total'] ?? 0);
         }
     }
 
@@ -70,3 +68,4 @@ function getChartData($conn, $user_id, $filter = 'week') {
         'expense' => $expenseData
     ];
 }
+?>

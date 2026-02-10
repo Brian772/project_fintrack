@@ -1,9 +1,2 @@
 <?php
-$host = "localhost";
-$user = "root";
-$pass = "";
-$db = "keuangan";
-$conn = mysqli_connect($host, $user, $pass, $db);
-if (!$conn) {
-    die("Koneksi gagal: " . mysqli_connect_error());
-}
+require_once 'connection_sqlite.php';

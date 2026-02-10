@@ -22,16 +22,13 @@ session_start();
     $lang = getTranslations($userSettings['language'] ?? 'id');
     $currency = $userSettings['currency'] ?? 'IDR';
 
-    include '../src/php/config/connection.php';
     if (!isset($_SESSION['login']) && isset($_COOKIE['remember_token'])) {
         $token = $_COOKIE['remember_token'];
 
-        $query = mysqli_query(
-            $conn,
-            "SELECT * FROM users WHERE remember_token='$token'"
-        );
+        $stmt = $conn->prepare("SELECT * FROM users WHERE remember_token=?");
+        $stmt->execute([$token]);
 
-        if ($user = mysqli_fetch_assoc($query)) {
+        if ($user = $stmt->fetch(PDO::FETCH_ASSOC)) {
             $_SESSION['login'] = true;
             $_SESSION['user_id'] = $user['id'];
             $_SESSION['email'] = $user['email'];
@@ -96,7 +93,7 @@ session_start();
                     <img src="../src/img/logo.png" alt="Logo" class="w-10 h-10 object-contain rounded-md">
                     <div class="flex flex-col">
                         <h1 class="text-2xl font-bold tracking-tight text-emerald-950 dark:text-emerald-400">FinTrack</h1>
-                        <span class="text-xs text-gray-400 dark:text-slate-500"><?= $lang['track_text'] ?></span>
+                        <span class="text-xs text-gray-400 dark:text-slate-500">Track Every Worth Precisely</span>
                     </div>
                 </div>
                 <button onclick="toggleSidebar()" class="text-gray-500 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-200">
@@ -123,7 +120,7 @@ session_start();
                     <img src="../src/img/logo.png" alt="Logo" class="w-10 h-10 object-contain rounded-md">
                     <div class="flex flex-col items-center md:items-start">
                         <h1 class="text-2xl font-bold tracking-tight text-emerald-950 dark:text-emerald-400">FinTrack</h1>
-                        <span class="text-xs text-gray-400 dark:text-slate-500"><?= $lang['track_text'] ?></span>
+                        <span class="text-xs text-gray-400 dark:text-slate-500">Track Every Worth Precisely</span>
                     </div>
                 </div>
             </div>
@@ -245,6 +242,7 @@ session_start();
             <h2 class="text-2xl font-bold mb-4 text-emerald-800 dark:text-emerald-400"><?= $lang['add_transaction'] ?></h2>
 
             <form action="../src/php/transactions/store.php" method="POST" class="space-y-4">
+                <input type="hidden" name="form_token" id="formToken" value="">
                 <!-- Input Nominal -->
                 <div>
                     <label class="block text-sm font-medium text-gray-700 dark:text-white mb-2"><?= $lang['nominal'] ?></label>

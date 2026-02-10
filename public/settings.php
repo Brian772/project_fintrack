@@ -56,9 +56,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         // Verify current password
         $q = $conn->prepare("SELECT password FROM users WHERE id = ?");
-        $q->bind_param("i", $_SESSION['user_id']);
-        $q->execute();
-        $user = $q->get_result()->fetch_assoc();
+        $q->execute([$_SESSION['user_id']]);
+        $user = $q->fetch(PDO::FETCH_ASSOC);
 
         if (password_verify($current_password, $user['password'])) {
             if ($new_password === $confirm_password) {
@@ -279,7 +278,7 @@ $lang = getTranslations($userSettings['language'] ?? 'id');
             <div class="p-6 max-w-4xl mx-auto space-y-8">
                 <!-- Profile Section -->
                 <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700 mb-6 overflow-hidden">
-                    <div class="section-header flex items-center justify-between p-6 cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700 dark:hover:bg-slate-700" onclick="toggleSection(this)">
+                    <div class="section-header flex items-center justify-between p-6 cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700" onclick="toggleSection(this)">
                         <h3 class="text-xl font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
                             <i class="fa-solid fa-user text-emerald-600 dark:text-emerald-400"></i> <?= $lang['profile'] ?>
                         </h3>

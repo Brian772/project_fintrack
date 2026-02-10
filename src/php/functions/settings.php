@@ -1,10 +1,9 @@
 <?php
 function getUserSettings($conn, $user_id) {
+    if (!$user_id) return null;
     $q = $conn->prepare("SELECT name, email, profile_picture, theme, language, currency FROM users WHERE id = ?");
-    $q->bind_param("i", $user_id);
-    $q->execute();
-    $result = $q->get_result();
-    return $result->fetch_assoc();
+    $q->execute([$user_id]);
+    return $q->fetch(PDO::FETCH_ASSOC);
 }
 
 function getTranslations($langCode) {
@@ -35,7 +34,6 @@ function getTranslations($langCode) {
             'cancel' => 'Batal',
             'add' => 'Tambah',
             'hello' => 'Halo',
-            'track_text' => 'Pantau Setiap Sen Dengan Tepat',
             'edit_transaction' => 'Edit Transaksi',
             'update' => 'Perbarui',
             'daily' => 'Harian',
@@ -104,7 +102,6 @@ function getTranslations($langCode) {
             'cancel' => 'Cancel',
             'add' => 'Add',
             'hello' => 'Hello',
-            'track_text' => 'Track Every Worth Precisely',
             'edit_transaction' => 'Edit Transaction',
             'update' => 'Update',
             'daily' => 'Daily',
@@ -173,7 +170,6 @@ function getTranslations($langCode) {
             'cancel' => 'Отмена',
             'add' => 'Добавить',
             'hello' => 'Здравствуйте',
-            'track_text' => 'Точно отслеживайте каждую ценность',
             'edit_transaction' => 'Редактировать транзакцию',
             'update' => 'Обновить',
             'daily' => 'Ежедневно',
@@ -242,7 +238,6 @@ function getTranslations($langCode) {
             'cancel' => 'Annuler',
             'add' => 'Ajouter',
             'hello' => 'Bonjour',
-            'track_text' => 'Suivez chaque valeur exactement',
             'edit_transaction' => 'Modifier la transaction',
             'update' => 'Mettre à jour',
             'daily' => 'Journalier',
@@ -292,23 +287,21 @@ function getTranslations($langCode) {
 function updateUserProfile($conn, $user_id, $name, $email, $profile_picture = null) {
     if ($profile_picture) {
         $q = $conn->prepare("UPDATE users SET name = ?, email = ?, profile_picture = ? WHERE id = ?");
-        $q->bind_param("sssi", $name, $email, $profile_picture, $user_id);
+        $q->execute([$name, $email, $profile_picture, $user_id]);
     } else {
         $q = $conn->prepare("UPDATE users SET name = ?, email = ? WHERE id = ?");
-        $q->bind_param("ssi", $name, $email, $user_id);
+        $q->execute([$name, $email, $user_id]);
     }
-    return $q->execute();
+    return true; // Simplified success for PDO
 }
 
 function updateUserPassword($conn, $user_id, $new_password) {
     $hashed_password = password_hash($new_password, PASSWORD_DEFAULT);
     $q = $conn->prepare("UPDATE users SET password = ? WHERE id = ?");
-    $q->bind_param("si", $hashed_password, $user_id);
-    return $q->execute();
+    return $q->execute([$hashed_password, $user_id]);
 }
 
 function getExchangeRates() {
-    // Base currency is IDR
     // Rates are: 1 IDR = X Target Currency
     return [
         'IDR' => 1,
@@ -325,8 +318,8 @@ function updateUserPreferences($conn, $user_id, $theme, $language, $currency) {
 
     // Update preferences
     $q = $conn->prepare("UPDATE users SET theme = ?, language = ?, currency = ? WHERE id = ?");
-    $q->bind_param("sssi", $theme, $language, $currency, $user_id);
-    $success = $q->execute();
+    $q->execute([$theme, $language, $currency, $user_id]);
+    $success = true;
 
     // If currency changed and update was successful, convert transactions and budget
     if ($success && $oldCurrency !== $currency) {
@@ -339,13 +332,11 @@ function updateUserPreferences($conn, $user_id, $theme, $language, $currency) {
 
             // Update transactions
             $updateTrx = $conn->prepare("UPDATE transactions SET nominal = nominal * ? WHERE user_id = ?");
-            $updateTrx->bind_param("di", $conversionFactor, $user_id);
-            $updateTrx->execute();
+            $updateTrx->execute([$conversionFactor, $user_id]);
 
             // Update monthly budget
             $updateBudget = $conn->prepare("UPDATE budgets SET monthly_budget = monthly_budget * ? WHERE user_id = ?");
-            $updateBudget->bind_param("di", $conversionFactor, $user_id);
-            $updateBudget->execute();
+            $updateBudget->execute([$conversionFactor, $user_id]);
         }
     }
 
@@ -354,16 +345,13 @@ function updateUserPreferences($conn, $user_id, $theme, $language, $currency) {
 
 function getUserBudget($conn, $user_id) {
     $q = $conn->prepare("SELECT monthly_budget, category_budgets, alert_threshold FROM budgets WHERE user_id = ?");
-    $q->bind_param("i", $user_id);
-    $q->execute();
-    $result = $q->get_result();
-    $budget = $result->fetch_assoc();
+    $q->execute([$user_id]);
+    $budget = $q->fetch(PDO::FETCH_ASSOC);
 
     if (!$budget) {
         // Create default budget entry if not exists
         $q = $conn->prepare("INSERT INTO budgets (user_id) VALUES (?)");
-        $q->bind_param("i", $user_id);
-        $q->execute();
+        $q->execute([$user_id]);
         return ['monthly_budget' => 0, 'category_budgets' => '{}', 'alert_threshold' => 80];
     }
 
@@ -371,30 +359,31 @@ function getUserBudget($conn, $user_id) {
 }
 
 function updateUserBudget($conn, $user_id, $monthly_budget, $category_budgets, $alert_threshold) {
-    $q = $conn->prepare("
-        INSERT INTO budgets (user_id, monthly_budget, category_budgets, alert_threshold)
-        VALUES (?, ?, ?, ?)
-        ON DUPLICATE KEY UPDATE
-        monthly_budget = VALUES(monthly_budget),
-        category_budgets = VALUES(category_budgets),
-        alert_threshold = VALUES(alert_threshold)
-    ");
-    $q->bind_param("isds", $user_id, $monthly_budget, $category_budgets, $alert_threshold);
-    return $q->execute();
+    $q = $conn->prepare("UPDATE budgets SET monthly_budget = ?, category_budgets = ?, alert_threshold = ? WHERE user_id = ?");
+    $q->execute([$monthly_budget, $category_budgets, $alert_threshold, $user_id]);
+    
+    if ($q->rowCount() === 0) {
+        // check if row really missing
+        $check = $conn->prepare("SELECT 1 FROM budgets WHERE user_id = ?");
+        $check->execute([$user_id]);
+        if (!$check->fetch()) {
+            $q = $conn->prepare("INSERT INTO budgets (user_id, monthly_budget, category_budgets, alert_threshold) VALUES (?, ?, ?, ?)");
+            $q->execute([$user_id, $monthly_budget, $category_budgets, $alert_threshold]);
+        }
+    }
+    return true;
 }
 
 function exportUserData($conn, $user_id) {
     // Get user info
     $q = $conn->prepare("SELECT name, email, created_at FROM users WHERE id = ?");
-    $q->bind_param("i", $user_id);
-    $q->execute();
-    $user = $q->get_result()->fetch_assoc();
+    $q->execute([$user_id]);
+    $user = $q->fetch(PDO::FETCH_ASSOC);
 
     // Get all transactions
     $q = $conn->prepare("SELECT * FROM transactions WHERE user_id = ? ORDER BY tanggal DESC");
-    $q->bind_param("i", $user_id);
-    $q->execute();
-    $transactions = $q->get_result()->fetch_all(MYSQLI_ASSOC);
+    $q->execute([$user_id]);
+    $transactions = $q->fetchAll(PDO::FETCH_ASSOC);
 
     // Get budget settings
     $budget = getUserBudget($conn, $user_id);
@@ -409,24 +398,20 @@ function exportUserData($conn, $user_id) {
 
 function resetUserTransactions($conn, $user_id) {
     $q = $conn->prepare("DELETE FROM transactions WHERE user_id = ?");
-    $q->bind_param("i", $user_id);
-    return $q->execute();
+    return $q->execute([$user_id]);
 }
 
 function deleteUserAccount($conn, $user_id) {
     // Delete budget settings
     $q = $conn->prepare("DELETE FROM budgets WHERE user_id = ?");
-    $q->bind_param("i", $user_id);
-    $q->execute();
+    $q->execute([$user_id]);
 
     // Delete transactions
     $q = $conn->prepare("DELETE FROM transactions WHERE user_id = ?");
-    $q->bind_param("i", $user_id);
-    $q->execute();
+    $q->execute([$user_id]);
 
     // Delete user account
     $q = $conn->prepare("DELETE FROM users WHERE id = ?");
-    $q->bind_param("i", $user_id);
-    return $q->execute();
+    return $q->execute([$user_id]);
 }
 ?>

@@ -25,29 +25,27 @@ function getDashboardData($conn, $user_id) {
             ) AS saldo
             FROM transactions WHERE user_id=?
         ");
-    $q->bind_param("i", $user_id);
-    $q->execute();
-    $saldo = $q->get_result()->fetch_assoc() ['saldo'] ?? 0;
+    $q->execute([$user_id]);
+    $saldo = $q->fetch(PDO::FETCH_ASSOC)['saldo'] ?? 0;
 
-    //pemasukan bulan ini
+    //income
+    // SQLite: Compare YYYY-MM
     $q = $conn->prepare("
         SELECT SUM(nominal) AS pemasukan
         FROM transactions
-        WHERE user_id=? AND tipe='masuk' AND MONTH(tanggal)=MONTH(CURRENT_DATE()) AND YEAR(tanggal)=YEAR(CURRENT_DATE())
+        WHERE user_id=? AND tipe='masuk' AND strftime('%Y-%m', tanggal) = strftime('%Y-%m', 'now')
         ");
-    $q->bind_param("i", $user_id);
-    $q->execute();
-    $masuk = $q->get_result()->fetch_assoc() ['pemasukan'] ?? 0;
+    $q->execute([$user_id]);
+    $masuk = $q->fetch(PDO::FETCH_ASSOC)['pemasukan'] ?? 0;
 
-    //pengeluaran bulan ini
+    //expense
     $q = $conn->prepare("
         SELECT SUM(nominal) AS pengeluaran
         FROM transactions
-        WHERE user_id=? AND tipe='keluar' AND MONTH(tanggal)=MONTH(CURRENT_DATE()) AND YEAR(tanggal)=YEAR(CURRENT_DATE())
+        WHERE user_id=? AND tipe='keluar' AND strftime('%Y-%m', tanggal) = strftime('%Y-%m', 'now')
         ");
-    $q->bind_param("i", $user_id);
-    $q->execute();
-    $keluar = $q->get_result()->fetch_assoc() ['pengeluaran'] ?? 0;
+    $q->execute([$user_id]);
+    $keluar = $q->fetch(PDO::FETCH_ASSOC)['pengeluaran'] ?? 0;
 
     return [
         'saldo' => $saldo,
@@ -64,12 +62,10 @@ function getLastTransactions($conn, $user_id, $limit = 5) {
         ORDER BY tanggal DESC
         LIMIT ?
     ");
-    $q->bind_param("ii", $user_id, $limit);
+    $q->bindValue(1, $user_id, PDO::PARAM_INT);
+    $q->bindValue(2, $limit, PDO::PARAM_INT);
     $q->execute();
-    $result = $q->get_result();
-    $transactions = [];
-    while ($row = $result->fetch_assoc()) {
-        $transactions[] = $row;
-    }
+    $transactions = $q->fetchAll(PDO::FETCH_ASSOC);
     return $transactions;
 }
+?>
