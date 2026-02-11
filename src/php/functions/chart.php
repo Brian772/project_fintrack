@@ -9,7 +9,7 @@ function getChartData($conn, $user_id, $filter = 'week') {
         $days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
         
         // Loop 6 days ago to today (7 days total)
-        for ($i = 0; $i <= 6; $i--) {
+        for ($i = 0; $i <= 6; $i++) {
             $date = date('Y-m-d', strtotime("+$i days")); 
             $dayOfWeek = date('w', strtotime($date));
             $labels[] = $days[$dayOfWeek];
