@@ -90,7 +90,7 @@ session_start();
         <aside id="mobileSidebar" class="fixed inset-y-0 left-0 z-50 w-64 bg-white dark:bg-slate-800 border-r border-gray-200 dark:border-slate-700 transform -translate-x-full transition-transform duration-300 md:hidden flex flex-col">
             <div class="p-6 flex items-center justify-between">
                 <div class="flex gap-2 flex-row items-center">
-                    <img src="../src/img/logo.png" alt="Logo" class="w-10 h-10 object-contain rounded-md">
+                    <img src="../src/img/Logo_FinTrack.png" alt="Logo" class="w-10 h-10 object-contain rounded-md">
                     <div class="flex flex-col">
                         <h1 class="text-2xl font-bold tracking-tight text-emerald-950 dark:text-emerald-400">FinTrack</h1>
                         <span class="text-xs text-gray-400 dark:text-slate-500">Track Every Worth Precisely</span>
@@ -117,7 +117,7 @@ session_start();
         <aside id="desktopSidebar" class="w-64 bg-white dark:bg-slate-800 border-r border-gray-200 dark:border-slate-700 hidden md:flex flex-col">
             <div class="p-6 flex items-center gap-2">
                 <div class="flex gap-2 flex-row">
-                    <img src="../src/img/logo.png" alt="Logo" class="w-10 h-10 object-contain rounded-md">
+                    <img src="../src/img/Logo_FinTrack.png" alt="Logo" class="w-10 h-10 object-contain rounded-md">
                     <div class="flex flex-col items-center md:items-start">
                         <h1 class="text-2xl font-bold tracking-tight text-emerald-950 dark:text-emerald-400">FinTrack</h1>
                         <span class="text-xs text-gray-400 dark:text-slate-500">Track Every Worth Precisely</span>

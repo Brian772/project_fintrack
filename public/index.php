@@ -19,7 +19,7 @@ if (isset($_GET['from']) && $_GET['from'] === 'register') {
 <body class="font-['Inter'] bg-gray-100">
     <header class="w-full h-16 bg-white border-b border-gray-200 flex items-center px-6 z-10">
         <div class="flex gap-2 flex-row">
-            <img src="../src/img/logo.png" alt="Logo" class="w-10 h-10 object-contain rounded-md">
+            <img src="../src/img/Logo_FinTrack.png" alt="Logo" class="w-10 h-10 object-contain rounded-md">
             <div class="flex flex-col items-center md:items-start">
                 <h1 class="text-2xl font-bold tracking-tight text-emerald-950">FinTrack</h1>
                 <span class="text-xs text-gray-400">Track Every Worth Precisely</span>
