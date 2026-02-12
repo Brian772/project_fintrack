@@ -12,8 +12,9 @@ if (isset($_GET['from']) && $_GET['from'] === 'register') {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="./css/output.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="icon" href="../src/img/Logo_FinTrack.png" type="image/png">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <title>FinTrack | Login</title>
 </head>
 <body class="font-['Inter'] bg-gray-100">
@@ -35,7 +36,7 @@ if (isset($_GET['from']) && $_GET['from'] === 'register') {
                     <i class="fa-solid fa-check text-emerald-600 text-lg"></i>
                 </div>
                 <div>
-                    <h4 class="font-bold text-slate-800 text-sm">Registration Success</h4>
+                    <h4 class="font-bold text-slate-800 text-sm">Login Success</h4>
                     <p class="text-xs text-slate-500"><?= $_SESSION['success']; ?></p>
                 </div>
             </div>
@@ -50,7 +51,7 @@ if (isset($_GET['from']) && $_GET['from'] === 'register') {
             </h2>
             <p class="text-xs text-gray-400 text-center mb-6">Login to your account</p>
 
-            <form action="/project - copy/src/php/auth/login.php" method="POST" class="flex flex-col gap-4">
+            <form action="/project_FinTrack/src/php/auth/login.php" method="POST" class="flex flex-col gap-4">
                 <!-- Email Input -->
                 <div>
                     <label for="email" class="block text-sm font-medium text-gray-600 mb-1">Email :</label>
